@@ -1,0 +1,12 @@
+Name:                obdd
+Version:             0.2
+Synopsis:            Ordered Reduced Binary Decision Diagrams
+Description:         Construct, combine and query OBDDs;
+                     an efficient representation for formulas in propositional logic
+License:             GPL
+License-file:        LICENSE
+Author:              Johannes Waldmann
+Maintainer:          Johannes Waldmann <waldmann@imn.htwk-leipzig.de>
+Build-Depends:       base, random, mtl, containers
+Build-Type:	     Simple
+Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property
