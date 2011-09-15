@@ -12,7 +12,7 @@ RUN  :  ./Placement 3 10
 import OBDD (OBDD)
 import qualified OBDD
 
-import Control.Monad ( guard )
+import Control.Monad ( guard, forM_ )
 import System.Environment ( getArgs )
 import qualified Data.Set 
 
@@ -28,24 +28,18 @@ adjacent :: Position -> Position -> Bool
 adjacent (a,b) (c,d) = 
     abs (a-c) <= 1 && abs (b-d) <= 1
   
-board :: Int -> Int -> OBDD Position
-board w h = OBDD.and $ do
-    p <- positions w h
-    q <- positions w h
-    guard $ p < q 
-    guard $ adjacent p q
-    return $ OBDD.or [ OBDD.unit p False, OBDD.unit q False ]
-
 main = do
     args <- getArgs
     let [ width, height ] = map read args :: [ Int ]
-    let d :: OBDD Position
-        d = board width height
+        ps = positions width height
+    print $ OBDD.number_of_models ( Data.Set.fromList ps )
+          $ OBDD.and $ do
+           p <- ps
+           q <- ps
+           guard $ p < q 
+           guard $ adjacent p q
+           return $ OBDD.or [ OBDD.unit p False, OBDD.unit q False ]
 
-    print $ OBDD.satisfiable d
 
-    print $ OBDD.number_of_models 
-          ( Data.Set.fromList $ positions width height )
-          d
 
 
