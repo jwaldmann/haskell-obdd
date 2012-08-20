@@ -19,6 +19,8 @@ import qualified Data.Map as M
 import Data.Set ( Set )
 import qualified Data.Set as S
 
+import Data.List ( foldl' )
+
 import Prelude hiding ( (&&), (||), and, or, not )
 import qualified Prelude
 
@@ -29,10 +31,10 @@ import qualified Prelude
 ( || ) = binary ( Prelude.|| )
 
 and :: Ord v => [ OBDD v ] -> OBDD v
-and = foldr ( && ) ( constant True ) 
+and = foldl' ( && ) ( constant True ) 
 
 or :: Ord v => [ OBDD v ] -> OBDD v
-or = foldr ( || ) ( constant False ) 
+or = foldl' ( || ) ( constant False ) 
 
 
 -- | FIXME this is a silly implementation. Negation should be done

@@ -1,5 +1,5 @@
 Name:                obdd
-Version:             0.2.2
+Version:             0.2.3
 Synopsis:            Ordered Reduced Binary Decision Diagrams
 Description:         Construct, combine and query OBDDs;
                      an efficient representation for formulas in propositional logic

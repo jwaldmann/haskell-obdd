@@ -29,7 +29,7 @@ import qualified Data.Map.Strict as M
 import Data.Set ( Set )
 import qualified Data.Set as S
 
-import Control.Monad.State
+import Control.Monad.State.Strict
 import qualified System.Random
 
 import Prelude hiding ( null )
@@ -40,12 +40,12 @@ newtype Index = Index { unIndex :: Int }
 
 -- | assumes total ordering on variables
 data OBDD v = OBDD
-	    { core :: Map Index ( Node v Index )
-	    , icore :: Map ( Node v Index ) Index
+	    { core :: !(Map Index ( Node v Index ))
+	    , icore :: !(Map ( Node v Index ) Index)
 	    , counter :: Map Index Integer -- ^ number of assignments
-	    , next :: Index
-	    , top :: Index
-	    , cache :: Map ( Index, Index ) Index -- ^ inputs and output for binary op
+	    , next :: !Index
+	    , top :: !Index
+	    , cache :: ! (Map ( Index, Index ) Index) -- ^ inputs and output for binary op
 		    -- (unary will be simulated by binary)
 	    }
 
@@ -83,7 +83,7 @@ empty = OBDD
       , icore = M.empty
       , counter = M.empty
       , next = 0
-      , top = error "OBDD.Data.empty"
+      , top = -42 -- error "OBDD.Data.empty"
       , cache = M.empty
       }
 
@@ -98,7 +98,8 @@ access s = case M.lookup ( top s ) ( core s ) of
     Nothing -> error "OBDD.Data.access"
     Just n  -> case n of
         Leaf p -> Leaf p
-	Branch v l r -> Branch v ( s { top = l } ) ( s { top = r } )
+	Branch v l r -> 
+          Branch v ( s { top = l } ) ( s { top = r } )
 
 count :: OBDD v -> Index -> Integer
 count s i = case M.lookup i ( counter s ) of
@@ -155,7 +156,7 @@ make :: State ( OBDD v ) Index
      -> OBDD v
 make action = 
     let ( i, s ) = runState action empty 
-    in  s { top = i }
+    in  i `seq` s { top = i }
 
 fresh :: State ( OBDD v ) Index
 fresh = do
