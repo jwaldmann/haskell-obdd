@@ -12,4 +12,5 @@ Build-Depends:       base, random, mtl, containers
 Hs-Source-Dirs:	     src
 Build-Type:	     Simple
 Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property
+Other-Modules:	     OBDD.IntIntMap
 ghc-options:	     -funbox-strict-fields
