@@ -7,6 +7,7 @@ module OBDD.Data
 (
 -- * the data type
  OBDD -- abstract
+, size
 -- * for external use
 , null, satisfiable
 , number_of_models
@@ -22,8 +23,8 @@ module OBDD.Data
 
 where
 
-import Data.Map ( Map )
-import qualified Data.Map as M
+import Data.Map.Strict ( Map )
+import qualified Data.Map.Strict as M
 
 import Data.Set ( Set )
 import qualified Data.Set as S
@@ -34,7 +35,8 @@ import qualified System.Random
 import Prelude hiding ( null )
 import qualified Prelude
 
-newtype Index = Index Int deriving ( Eq, Ord, Num, Enum, Show )
+newtype Index = Index { unIndex :: Int }
+   deriving ( Eq, Ord, Num, Enum, Show )
 
 -- | assumes total ordering on variables
 data OBDD v = OBDD
@@ -46,6 +48,8 @@ data OBDD v = OBDD
 	    , cache :: Map ( Index, Index ) Index -- ^ inputs and output for binary op
 		    -- (unary will be simulated by binary)
 	    }
+
+size = unIndex . next
 
 -- | Number of satisfying assignments with  given set of variables.
 -- The set of variables must be given since the current OBDD may not contain
@@ -83,8 +87,8 @@ empty = OBDD
       , cache = M.empty
       }
 
-data Node v i = Leaf Bool
-	    | Branch v i i
+data Node v i = Leaf !Bool
+	    | Branch !v !i !i
     deriving ( Eq, Ord )
 
 {-! for Node derive: ToDoc !-}
