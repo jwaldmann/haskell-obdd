@@ -1,15 +1,24 @@
 Name:                obdd
 Version:             0.2.3
+Cabal-Version:       >= 1.6
+Build-type: Simple
 Synopsis:            Ordered Reduced Binary Decision Diagrams
 Description:         Construct, combine and query OBDDs;
                      an efficient representation for formulas in propositional logic
-homepage:	     git://dfa.imn.htwk-leipzig.de/srv/git/obdd
+category:	     Logic
 License:             GPL
 License-file:        LICENSE
 Author:              Johannes Waldmann
 Maintainer:          Johannes Waldmann <waldmann@imn.htwk-leipzig.de>
-Build-Depends:       base, random, mtl, containers
-Hs-Source-Dirs:	     src
-Build-Type:	     Simple
-Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property
-ghc-options:	     -funbox-strict-fields
+
+library
+    Build-Depends:       base==4.*, random, mtl, containers
+    Hs-Source-Dirs:	     src
+    Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property
+    ghc-options: -funbox-strict-fields
+
+
+Source-Repository head
+    Type: git
+    Location: git://dfa.imn.htwk-leipzig.de/srv/git/obdd/
+
