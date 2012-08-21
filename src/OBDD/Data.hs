@@ -55,17 +55,17 @@ data OBDD v = OBDD
 	    
             -- , icore :: !(Map ( Node v Index ) Index)
             , icore :: !(VarIntIntMap v Index)
-            , icore_false :: ! Index  
-            , icore_true :: ! Index  
-              
 	    , next :: !Index
 	    , top :: !Index
 	    
-            , cache :: ! (IntIntMap Index) 
+            , cache ::  !(IntIntMap Index) 
                -- ^ inputs and output for binary op
                -- (unary will be simulated by binary)
 	    }
 
+icore_false = 0 :: Index  
+icore_true = 1 :: Index  
+              
 size = unIndex . next
 
 -- | Number of satisfying assignments with  given set of variables.
@@ -98,8 +98,6 @@ empty :: OBDD v
 empty = OBDD 
       { core = IM.empty
       , icore = VIIM.empty
-      , icore_false = 0          
-      , icore_true = 1                
       , next = 2
       , top = 0
       , cache = IIM.empty
@@ -190,12 +188,12 @@ cached :: Ord v
 	-> State ( OBDD v ) Index
 cached (l,r) action = do
     s <- get
-    case IIM.lookup l r $ cache s of
+    case IIM.lookup (l, r) $ cache s of
         Just i -> return i
 	Nothing -> do
 	    i <- action
 	    s <- get
-	    put $! s { cache = IIM.insert l r i 
+	    put $! s { cache = IIM.insert (l, r) i 
                               $ cache s }
 	    return i
 
@@ -207,14 +205,14 @@ register n = case n of
     Leaf True -> return 1
     Branch v l r -> if l == r then return l else do
       s <- get    
-      case VIIM.lookup v l r ( icore s ) of
+      case VIIM.lookup (v, l, r) ( icore s ) of
         Just i -> return i
 	Nothing -> do
 	        i <- fresh
 	        s <- get
 	        put $! s 
 		    { core = IM.insert i n $ core s
-		    , icore = VIIM.insert v l r i 
+		    , icore = VIIM.insert (v, l, r) i 
                             $ icore s
 		    }
 	        return i  

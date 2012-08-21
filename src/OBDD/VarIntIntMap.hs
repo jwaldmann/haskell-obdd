@@ -10,14 +10,14 @@ newtype VarIntIntMap k v =
     
 empty = VarIntIntMap M.empty
 
-lookup k i j (VarIntIntMap mm) = do
+lookup (k, i, j) (VarIntIntMap mm) = do
     m <- M.lookup k mm
-    I.lookup i j m
+    I.lookup (i, j) m
 
-insert k i j v (VarIntIntMap mm) = 
+insert (k, i, j) v (VarIntIntMap mm) = 
     case M.lookup k mm of
         Nothing -> VarIntIntMap 
-                   $ M.insert k (I.singleton i j v) mm
+                   $ M.insert k (I.singleton (i, j) v) mm
         Just m -> VarIntIntMap           
-                   $ M.insert k (I.insert i j v m) mm
+                   $ M.insert k (I.insert (i, j) v m) mm
 
