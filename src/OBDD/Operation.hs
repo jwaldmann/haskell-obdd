@@ -19,7 +19,8 @@ import qualified Data.Map as M
 import Data.Set ( Set )
 import qualified Data.Set as S
 
-import Data.List ( foldl' )
+-- import Data.List ( foldl' )
+-- don't use, see below
 
 import Prelude hiding ( (&&), (||), and, or, not )
 import qualified Prelude
@@ -30,11 +31,15 @@ import qualified Prelude
 ( || ) :: Ord v => OBDD v -> OBDD v -> OBDD v
 ( || ) = binary ( Prelude.|| )
 
+
+
 and :: Ord v => [ OBDD v ] -> OBDD v
-and = foldl' ( && ) ( constant True ) 
+and = foldr ( && ) ( constant True ) 
+-- writing foldl or fold' here 
+-- makes performance MUCH worse!
 
 or :: Ord v => [ OBDD v ] -> OBDD v
-or = foldl' ( || ) ( constant False ) 
+or = foldr ( || ) ( constant False ) 
 
 
 -- | FIXME this is a silly implementation. Negation should be done

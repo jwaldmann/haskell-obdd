@@ -1,0 +1,14 @@
+test case: havannah static analyser
+commit 0fd118e4d8ed6eae034d199e3159a03ecb8bc49f
+time ./Count_Main 1471285 11
+
+* obdd-0.2 as on hackage: 22 sec
+
+* obb-0.2.2 : 23 sec
+  (Data.Map.Strict, -funbox-strict-fields):
+
+* OBBD.Data.make  with  seq:  20 sec
+* OBBD.Op.and/or  with  foldl' : 19 sec
+
+* IntIntMap: 10 sec (?)
+* VarIntIntMap: 9 sec

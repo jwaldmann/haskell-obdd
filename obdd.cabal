@@ -1,5 +1,5 @@
 Name:                obdd
-Version:             0.2.3
+Version:             0.2.5
 Cabal-Version:       >= 1.6
 Build-type: Simple
 Synopsis:            Ordered Reduced Binary Decision Diagrams
@@ -15,6 +15,7 @@ library
     Build-Depends:       base==4.*, random, mtl, containers
     Hs-Source-Dirs:	     src
     Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property
+    Other-Modules:	     OBDD.IntIntMap, OBDD.VarIntIntMap
     ghc-options: -funbox-strict-fields
 
 
