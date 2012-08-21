@@ -29,6 +29,9 @@ import qualified Data.IntMap.Strict as IM
 import OBDD.IntIntMap (IntIntMap)
 import qualified OBDD.IntIntMap as IIM
 
+import OBDD.VarIntIntMap (VarIntIntMap)
+import qualified OBDD.VarIntIntMap as VIIM
+
 import Data.Map.Strict ( Map )
 import qualified Data.Map.Strict as M
 
@@ -49,10 +52,16 @@ type Index = Int ; unIndex = id
 -- | assumes total ordering on variables
 data OBDD v = OBDD
 	    { core :: !(IntMap ( Node v Index ))
-	    , icore :: !(Map ( Node v Index ) Index)
+	    
+            -- , icore :: !(Map ( Node v Index ) Index)
+            , icore :: !(VarIntIntMap v Index)
+            , icore_false :: ! Index  
+            , icore_true :: ! Index  
+              
 	    , next :: !Index
 	    , top :: !Index
-	    , cache :: ! (IntIntMap Index) 
+	    
+            , cache :: ! (IntIntMap Index) 
                -- ^ inputs and output for binary op
                -- (unary will be simulated by binary)
 	    }
@@ -88,9 +97,11 @@ number_of_models vs o =
 empty :: OBDD v
 empty = OBDD 
       { core = IM.empty
-      , icore = M.empty
-      , next = 0
-      , top = -42 -- error "OBDD.Data.empty"
+      , icore = VIIM.empty
+      , icore_false = 0          
+      , icore_true = 1                
+      , next = 2
+      , top = 0
       , cache = IIM.empty
       }
 
@@ -101,12 +112,16 @@ data Node v i = Leaf !Bool
 {-! for Node derive: ToDoc !-}
 
 access :: OBDD v -> Node v ( OBDD v )
-access s = case IM.lookup ( top s ) ( core s ) of
-    Nothing -> error "OBDD.Data.access"
-    Just n  -> case n of
-        Leaf p -> Leaf p
-	Branch v l r -> 
-          Branch v ( s { top = l } ) ( s { top = r } )
+access s = case top s of
+    0 -> Leaf False
+    1 -> Leaf True
+    t -> case IM.lookup ( top s ) ( core s ) of
+        Nothing -> error "OBDD.Data.access"
+        Just n  -> case n of
+            Leaf p -> error "Leaf in core"
+	    Branch v l r -> 
+                Branch v ( s { top = l } ) 
+                         ( s { top = r } )
 
 -- | does the OBDD have any models?
 satisfiable :: OBDD v -> Bool
@@ -120,7 +135,9 @@ null s = case access s of
 
 
 -- | randomly select one model, if possible
-some_model :: Ord v => OBDD v -> IO ( Maybe  ( Map v Bool ) )
+some_model :: Ord v 
+           => OBDD v 
+           -> IO ( Maybe  ( Map v Bool ) )
 some_model s = case access s of
     Leaf True -> return $ Just $ M.empty
     Leaf False -> return Nothing
@@ -135,7 +152,8 @@ some_model s = case access s of
         Just m <- some_model t
         return $ Just $ M.insert v p m 
 
--- | list of all models (WARNING not using variables that had been deleted)
+-- | list of all models (WARNING not using 
+-- variables that had been deleted)
 all_models :: Ord v => OBDD v -> [ Map v Bool ]
 all_models s = case access s of
     Leaf True -> return  M.empty
@@ -175,29 +193,31 @@ cached :: Ord v
 	-> State ( OBDD v ) Index
 cached (l,r) action = do
     s <- get
-    case IIM.lookup (l,r) $ cache s of
+    case IIM.lookup l r $ cache s of
         Just i -> return i
 	Nothing -> do
 	    i <- action
 	    s <- get
-	    put $ s { cache = IIM.insert ( l,r) i 
+	    put $ s { cache = IIM.insert l r i 
                               $ cache s }
 	    return i
 
 register :: Ord v
 	 => Node v Index
        -> State ( OBDD v ) Index
-register n = do
-    s <- get
-    case M.lookup n ( icore s ) of
+register n = case n of
+    Leaf False -> return 0
+    Leaf True -> return 1
+    Branch v l r -> if l == r then return l else do
+      s <- get    
+      case VIIM.lookup v l r ( icore s ) of
         Just i -> return i
-	Nothing -> case n of
-            Branch v l r | l == r -> return l -- TRICK (?)
-            _ -> do
+	Nothing -> do
 	        i <- fresh
 	        s <- get
 	        put $ s 
 		    { core = IM.insert i n $ core s
-		    , icore = M.insert n i $ icore s
+		    , icore = VIIM.insert v l r i 
+                            $ icore s
 		    }
 	        return i  

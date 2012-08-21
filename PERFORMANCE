@@ -11,3 +11,4 @@ time ./Count_Main 1471285 11
 * OBBD.Op.and/or  with  foldl' : 19 sec
 
 * IntIntMap: 10 sec (?)
+* VarIntIntMap: 9 sec

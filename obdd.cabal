@@ -1,5 +1,5 @@
 Name:                obdd
-Version:             0.2.4
+Version:             0.2.5
 Synopsis:            Ordered Reduced Binary Decision Diagrams
 Description:         Construct, combine and query OBDDs;
                      an efficient representation for formulas in propositional logic
@@ -12,5 +12,5 @@ Build-Depends:       base, random, mtl, containers
 Hs-Source-Dirs:	     src
 Build-Type:	     Simple
 Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property
-Other-Modules:	     OBDD.IntIntMap
+Other-Modules:	     OBDD.IntIntMap, OBDD.VarIntIntMap
 ghc-options:	     -funbox-strict-fields
