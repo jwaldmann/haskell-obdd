@@ -89,7 +89,7 @@ number_of_models vs o =
                              xr <- fun r post
                              let xlr = xl + xr
                              m <- get
-                             put $ M.insert ( top o ) xlr m
+                             put $! M.insert ( top o ) xlr m
                              return $ ( 2 ^ length pre ) * xlr
     in evalState ( fun o $ reverse $ S.toAscList vs ) M.empty
     
@@ -108,8 +108,6 @@ empty = OBDD
 data Node v i = Leaf !Bool
 	    | Branch !v !i !i
     deriving ( Eq, Ord )
-
-{-! for Node derive: ToDoc !-}
 
 access :: OBDD v -> Node v ( OBDD v )
 access s = case top s of
@@ -132,7 +130,6 @@ null :: OBDD v -> Bool
 null s = case access s of
       Leaf False -> True 
       _ -> False
-
 
 -- | randomly select one model, if possible
 some_model :: Ord v 
@@ -184,7 +181,7 @@ fresh :: State ( OBDD v ) Index
 fresh = do
     s <- get
     let i = next s
-    put $ s { next = succ i }
+    put $! s { next = succ i }
     return i
 
 cached :: Ord v
@@ -198,7 +195,7 @@ cached (l,r) action = do
 	Nothing -> do
 	    i <- action
 	    s <- get
-	    put $ s { cache = IIM.insert l r i 
+	    put $! s { cache = IIM.insert l r i 
                               $ cache s }
 	    return i
 
@@ -215,7 +212,7 @@ register n = case n of
 	Nothing -> do
 	        i <- fresh
 	        s <- get
-	        put $ s 
+	        put $! s 
 		    { core = IM.insert i n $ core s
 		    , icore = VIIM.insert v l r i 
                             $ icore s

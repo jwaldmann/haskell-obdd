@@ -20,5 +20,4 @@ insert k i j v (VarIntIntMap mm) =
                    $ M.insert k (I.singleton i j v) mm
         Just m -> VarIntIntMap           
                    $ M.insert k (I.insert i j v m) mm
-                       
 
