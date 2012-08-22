@@ -112,14 +112,13 @@ instantiate var val x = make $ do
     let handle x = cached ( top x, top x ) $ case access x of
             Leaf p -> register $ Leaf p
             Branch v l r -> 
-                if v == var
-                then do
+                if v == var then do
                      let t = if val then r else l
                      handle t
-                else do
+                else  do
                      l' <- handle l
                      r' <- handle r
-                     register $ Branch v l' r'
+                     register $ Branch v l' r' 
     handle x
 
 comp x y = case (x , y) of
