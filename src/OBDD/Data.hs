@@ -47,6 +47,8 @@ import Control.Monad.State.Strict
 import qualified System.Random
 import Control.Monad.Fix
 import Control.Monad ( forM, guard )
+import qualified Control.Monad ( foldM )
+
 
 import Prelude hiding ( null )
 import qualified Prelude
@@ -85,22 +87,21 @@ fold leaf branch o =
                         branch v (a A.! l) (a A.! r) )
     in  a A.! top o
 
-foldM :: (MonadFix m, Ord v)
+foldM :: (Monad m, Ord v)
      => ( Bool -> m a )
      -> ( v -> a -> a -> m a )
      -> OBDD v -> m a
-foldM leaf branch o = mdo
-    a <- do
-        pairs <- forM (A.indices a) $ \ i -> do
-            val <- case IM.lookup i $ core o of
-                Nothing -> undefined
-                Just n  -> case n of
-                    Leaf c -> leaf c
-                    Branch v l r -> 
-                        branch v (a A.! l) (a A.! r) 
-            return (i, val)
-        return $ A.array (0, top o) pairs    
-    return $ a A.! top o
+foldM leaf branch o = do
+    f <- leaf False ; t <- leaf True
+    let m0 = M.fromList 
+           [(icore_false,f), (icore_true,t)]
+    m <- Control.Monad.foldM ( \ m (i,n) -> do
+            val <- case n of
+                Branch v l r -> 
+                        branch v (m M.! l) (m M.! r) 
+            return $ M.insert i val m
+          ) m0 $ IM.toAscList $ core o
+    return $ m M.! top o
 
 
 icore_false = 0 :: Index  
