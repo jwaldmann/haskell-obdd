@@ -1,4 +1,5 @@
 {-# language GeneralizedNewtypeDeriving #-}
+{-# language RecursiveDo #-}
 
 -- | implementation of reduced ordered binary decision diagrams.
 
@@ -12,6 +13,7 @@ module OBDD.Data
 , null, satisfiable
 , number_of_models
 , some_model, all_models
+, fold, foldM
 -- * for internal use
 , Node (..)
 , make
@@ -35,11 +37,16 @@ import qualified OBDD.VarIntIntMap as VIIM
 import Data.Map.Strict ( Map )
 import qualified Data.Map.Strict as M
 
+import qualified Data.Array as A
+
 import Data.Set ( Set )
 import qualified Data.Set as S
 
-import Control.Monad.State.Strict
+import Control.Monad.State.Strict 
+   (State, runState, evalState, get, put)
 import qualified System.Random
+import Control.Monad.Fix
+import Control.Monad ( forM, guard )
 
 import Prelude hiding ( null )
 import qualified Prelude
@@ -62,6 +69,39 @@ data OBDD v = OBDD
                -- ^ inputs and output for binary op
                -- (unary will be simulated by binary)
 	    }
+
+fold :: Ord v 
+     => ( Bool -> a )
+     -> ( v -> a -> a -> a )
+     -> OBDD v -> a
+fold leaf branch o =
+    let a = A.array (0,top o) $ do
+            i <- A.indices a
+            return (i, case IM.lookup i $ core o of
+                Nothing -> undefined
+                Just n  -> case n of
+                    Leaf c -> leaf c
+                    Branch v l r -> 
+                        branch v (a A.! l) (a A.! r) )
+    in  a A.! top o
+
+foldM :: (MonadFix m, Ord v)
+     => ( Bool -> m a )
+     -> ( v -> a -> a -> m a )
+     -> OBDD v -> m a
+foldM leaf branch o = mdo
+    a <- do
+        pairs <- forM (A.indices a) $ \ i -> do
+            val <- case IM.lookup i $ core o of
+                Nothing -> undefined
+                Just n  -> case n of
+                    Leaf c -> leaf c
+                    Branch v l r -> 
+                        branch v (a A.! l) (a A.! r) 
+            return (i, val)
+        return $ A.array (0, top o) pairs    
+    return $ a A.! top o
+
 
 icore_false = 0 :: Index  
 icore_true = 1 :: Index  

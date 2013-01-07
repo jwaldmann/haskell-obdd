@@ -1,5 +1,5 @@
 Name:                obdd
-Version:             0.2.5
+Version:             0.2.6
 Cabal-Version:       >= 1.6
 Build-type: Simple
 Synopsis:            Ordered Reduced Binary Decision Diagrams
@@ -12,7 +12,7 @@ Author:              Johannes Waldmann
 Maintainer:          Johannes Waldmann <waldmann@imn.htwk-leipzig.de>
 
 library
-    Build-Depends:       base==4.*, random, mtl, containers>=0.5
+    Build-Depends:       base==4.*, random, mtl, containers>=0.5, array
     Hs-Source-Dirs:	     src
     Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property
     Other-Modules:	     OBDD.IntIntMap, OBDD.VarIntIntMap

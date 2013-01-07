@@ -59,6 +59,7 @@ main = do
     let d :: OBDD Position
         d = board n
 
+    print $ OBDD.size d
     print $ OBDD.satisfiable d
 
     print $ OBDD.number_of_models 
