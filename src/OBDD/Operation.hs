@@ -6,6 +6,7 @@ module OBDD.Operation
 , unary, binary
 , instantiate
 , exists, exists_many
+, fold, foldM
 )
 
 where
