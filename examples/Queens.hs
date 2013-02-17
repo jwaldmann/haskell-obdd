@@ -5,7 +5,7 @@ It shows how to construct an OBDD
 and how to check some of its properties.
 It also shows that the implementation is not terribly efficient.
 It computes the number of solutions for board size 8
-(the answer is: 92) in approx. 50 seconds on my machine.
+(the answer is: 92) in approx. 1.6 seconds on my machine.
 
 BUILD:  ghc -O2 Queens
 RUN  :  ./Queens 8
