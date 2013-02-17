@@ -4,11 +4,11 @@ correspond to the positions on the board.
 It shows how to construct an OBDD
 and how to check some of its properties.
 It also shows that the implementation is not terribly efficient.
-It computes the number of solutions for board size 7
-(the answer is: 40) in approx. 50 seconds on my machine.
+It computes the number of solutions for board size 8
+(the answer is: 92) in approx. 50 seconds on my machine.
 
-BUILD:  ghc --make Queens
-RUN  :  ./Queens 7
+BUILD:  ghc -O2 Queens
+RUN  :  ./Queens 8
 -}
 
 import OBDD (OBDD)
@@ -47,10 +47,11 @@ each_column_is_occupied n = OBDD.and $ do
 
 no_threats n = OBDD.and $ do
     p <- positions n
-    q <- positions n
-    guard $ p < q
-    guard $ threatens p q
-    return $ OBDD.or [ OBDD.unit p False, OBDD.unit q False ]
+    return $ OBDD.and $ do
+        q <- positions n
+        guard $ p < q
+        guard $ threatens p q
+        return $ OBDD.or [ OBDD.unit p False, OBDD.unit q False ]
 
 main = do
     [ arg ] <- getArgs

@@ -14,8 +14,8 @@ where
 import OBDD.Data
 import OBDD.Make
 
-import Data.Map ( Map )
-import qualified Data.Map as M
+import qualified Data.List ( sortBy)
+import Data.Function (on)
 
 import Data.Set ( Set )
 import qualified Data.Set as S
@@ -35,12 +35,26 @@ import qualified Prelude
 
 
 and :: Ord v => [ OBDD v ] -> OBDD v
-and = foldr ( && ) ( constant True ) 
+and = fold_by_size (constant True) (&&)
+-- and = foldr ( && ) ( constant True ) 
 -- writing foldl or fold' here 
 -- makes performance MUCH worse!
 
 or :: Ord v => [ OBDD v ] -> OBDD v
-or = foldr ( || ) ( constant False ) 
+or = fold_by_size (constant False) (||)
+-- or = foldr ( || ) ( constant False ) 
+
+fold_by_size base reduce fs =
+    let handle fs = case fs of
+            [] -> base
+            [f1 ] -> f1
+            f1 : f2 : rest -> 
+                let f = reduce f1 f2
+                in  handle $ insert f rest
+        insert f gs = case gs of
+            g : hs | size f > size g -> g : insert f hs
+            _ -> f : gs
+    in  handle $ Data.List.sortBy (compare `on` size) fs
 
 
 -- | FIXME this is a silly implementation. Negation should be done

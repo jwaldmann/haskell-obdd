@@ -1,5 +1,5 @@
 Name:                obdd
-Version:             0.2.6
+Version:             0.2.7
 Cabal-Version:       >= 1.6
 Build-type: Simple
 Synopsis:            Ordered Reduced Binary Decision Diagrams
@@ -21,5 +21,6 @@ library
 
 Source-Repository head
     Type: git
-    Location: git://dfa.imn.htwk-leipzig.de/srv/git/obdd/
+    Location: git://github.com/jwaldmann/haskell-obdd.git
+
 
