@@ -12,3 +12,5 @@ time ./Count_Main 1471285 11
 
 * IntIntMap: 10 sec (?)
 * VarIntIntMap: 9 sec
+
+* obdd-0.2.7: 6.6 sec
