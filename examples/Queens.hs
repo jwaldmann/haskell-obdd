@@ -13,6 +13,7 @@ RUN  :  ./Queens 8
 
 import OBDD (OBDD)
 import qualified OBDD
+import qualified OBDD.Data (toDot)
 
 import Control.Monad ( guard )
 import System.Environment ( getArgs )
@@ -70,3 +71,4 @@ main = do
     m <- OBDD.some_model d
     print m
 
+    -- writeFile "Queens.dot" $ OBDD.Data.toDot d

@@ -14,6 +14,7 @@ module OBDD.Data
 , number_of_models
 , some_model, all_models
 , fold, foldM
+, toDot
 -- * for internal use
 , Node (..)
 , make
@@ -42,8 +43,9 @@ import qualified Data.Array as A
 import Data.Set ( Set )
 import qualified Data.Set as S
 
-import Control.Monad.State.Strict 
-   (State, runState, evalState, get, put)
+import Control.Arrow ( (&&&) )
+import Control.Monad.State.Strict
+   (State, runState, evalState, get, put, gets, modify)
 import qualified System.Random
 import Control.Monad.Fix
 import Control.Monad ( forM, guard )
@@ -256,4 +258,49 @@ register n = case n of
 		    , icore = VIIM.insert (v, l, r) i 
                             $ icore s
 		    }
-	        return i  
+	        return i
+
+-- | toDot outputs a string in format suitable for input to the "dot" program
+-- from the graphviz suite.
+toDot :: (Show v) => OBDD v -> String
+toDot (OBDD idmap _ _ top _) =
+    unlines [ "digraph BDD {"
+            -- Start in oval mode
+            , "node[shape=oval];"
+            , evalState (helper $ idToNode top) S.empty
+            , "}"
+            ]
+  where
+    idToNode =
+        let getNode = \i -> case i of
+                          0 -> Leaf False
+                          1 -> Leaf True
+                          _ -> idmap IM.! i
+        in id &&& getNode
+
+    mkLabel lbl = "[label=\"" ++ lbl ++ "\"];"
+
+    helper (thisId, Leaf b) = return $
+        -- switch to rectangle nodes for the leaf, before going back to ovals.
+        unlines [ "node[shape=rectangle];"
+                , show thisId ++ mkLabel (show b)
+                , "node[shape=oval];"
+                ]
+    helper (thisId, Branch vid l r) = do
+        -- Ensure we don't traverse children multiple times, if we have more
+        -- than one edge into a given node.
+        beenHere <- gets (thisId `S.member`)
+        if beenHere
+            then return ""
+            else do
+                lstr <- helper $ idToNode l
+                rstr <- helper $ idToNode r
+                modify (thisId `S.insert`)
+                let idStr = show thisId
+                return $ unlines
+                   [ idStr ++ mkLabel (show vid)
+                   , lstr
+                   , idStr ++ "->" ++ show l ++ mkLabel "0"
+                   , rstr
+                   , idStr ++ "->" ++ show r ++ mkLabel "1"
+                   ]
