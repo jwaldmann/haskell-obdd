@@ -79,7 +79,8 @@ binary :: Ord v
       => ( Bool -> Bool -> Bool )
       -> OBDD v -> OBDD v -> OBDD v
 binary op x y = make $ do
-    let handle x y = cached (top x, top y) $ case ( access x , access y ) of
+    let -- register = checked_register -- for testing
+        handle x y = cached (top x, top y) $ case ( access x , access y ) of
 	            ( Leaf p , Leaf q ) -> register $ Leaf $ op p q
 		    ( ax, ay ) -> case comp ax ay of
 		        LT -> do
