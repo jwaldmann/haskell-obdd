@@ -18,7 +18,7 @@ module OBDD.Data
 -- * for internal use
 , Node (..)
 , make
-, register
+, register, checked_register
 , cached, top
 , access
 
@@ -259,6 +259,21 @@ register n = case n of
                             $ icore s
 		    }
 	        return i
+
+checked_register :: Ord v
+	 => Node v Index
+       -> State ( OBDD v ) Index
+checked_register n = case n of
+    Branch v l r -> do
+      s <- get 
+      let check_var_ordering b = case IM.lookup b (core s ) of 
+                  Just (Branch av _ _) | not (v > av) -> 
+                      error "wrong variable ordering"
+                  _ -> return ()
+      check_var_ordering l ; check_var_ordering r
+      register n
+    _ -> register n
+
 
 -- | toDot outputs a string in format suitable for input to the "dot" program
 -- from the graphviz suite.
