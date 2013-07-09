@@ -79,15 +79,17 @@ fold :: Ord v
      -> ( v -> a -> a -> a )
      -> OBDD v -> a
 fold leaf branch o =
-    let a = A.array (0,top o) $ do
-            i <- A.indices a
-            return (i, case IM.lookup i $ core o of
-                Nothing -> undefined
-                Just n  -> case n of
-                    Leaf c -> leaf c
+    let f = leaf False ; t = leaf True
+        m0 = M.fromList 
+           [(icore_false,f), (icore_true,t)]
+        m = foldl ( \ m (i,n) -> 
+            let val = case n of
                     Branch v l r -> 
-                        branch v (a A.! l) (a A.! r) )
-    in  a A.! top o
+                        branch v (m M.! l) (m M.! r) 
+            in M.insert i val m
+          ) m0 $ IM.toAscList $ core o
+    in  m M.! top o
+
 
 foldM :: (Monad m, Ord v)
      => ( Bool -> m a )
