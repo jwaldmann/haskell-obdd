@@ -67,11 +67,11 @@ unary :: Ord v
       -> OBDD v -> OBDD v
 unary op x = make $ do
     let handle x = cached ( top x, top x ) $ case access x of
-	        Leaf p -> register $ Leaf $ op p
-		Branch v l r -> do
-			l' <- handle l
-			r' <- handle r
-			register $ Branch v l' r'
+                Leaf p -> register $ Leaf $ op p
+                Branch v l r -> do
+                        l' <- handle l
+                        r' <- handle r
+                        register $ Branch v l' r'
     handle x
 
 
@@ -81,25 +81,25 @@ binary :: Ord v
 binary op x y = make $ do
     let -- register = checked_register -- for testing
         handle x y = cached (top x, top y) $ case ( access x , access y ) of
-	            ( Leaf p , Leaf q ) -> register $ Leaf $ op p q
-		    ( ax, ay ) -> case comp ax ay of
-		        LT -> do
-		            let Branch v l r = ay
-			    l' <- handle x l
-			    r' <- handle x r
-			    register $ Branch v l' r'
-			GT -> do
-			    let Branch v l r = ax
-			    l' <- handle l y
-			    r' <- handle r y
-			    register $ Branch v l' r'
-			EQ -> do
-			    let Branch v1 l1 r1 = ax
-				Branch v2 l2 r2 = ay
-				v = if v1 == v2 then v1 else error "OBDD.Operation.handle"
-			    l' <- handle l1 l2
-			    r' <- handle r1 r2
-			    register $ Branch v l' r'
+                    ( Leaf p , Leaf q ) -> register $ Leaf $ op p q
+                    ( ax, ay ) -> case comp ax ay of
+                        LT -> do
+                            let Branch v l r = ay
+                            l' <- handle x l
+                            r' <- handle x r
+                            register $ Branch v l' r'
+                        GT -> do
+                            let Branch v l r = ax
+                            l' <- handle l y
+                            r' <- handle r y
+                            register $ Branch v l' r'
+                        EQ -> do
+                            let Branch v1 l1 r1 = ax
+                                Branch v2 l2 r2 = ay
+                                v = if v1 == v2 then v1 else error "OBDD.Operation.handle"
+                            l' <- handle l1 l2
+                            r' <- handle r1 r2
+                            register $ Branch v l' r'
     handle x y
 
 -- | remove variables existentially

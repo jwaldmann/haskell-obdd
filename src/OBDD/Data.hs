@@ -1,5 +1,6 @@
 {-# language GeneralizedNewtypeDeriving #-}
 {-# language RecursiveDo #-}
+{-# language FlexibleContexts #-}
 
 -- | implementation of reduced ordered binary decision diagrams.
 
@@ -62,17 +63,17 @@ type Index = Int ; unIndex = id
 
 -- | assumes total ordering on variables
 data OBDD v = OBDD
-	    { core :: !(IntMap ( Node v Index ))
-	    
+            { core :: !(IntMap ( Node v Index ))
+            
             -- , icore :: !(Map ( Node v Index ) Index)
             , icore :: !(VarIntIntMap v Index)
-	    , next :: !Index
-	    , top :: !Index
-	    
+            , next :: !Index
+            , top :: !Index
+            
             , cache ::  !(IntIntMap Index) 
                -- ^ inputs and output for binary op
                -- (unary will be simulated by binary)
-	    }
+            }
 
 fold :: Ord v 
      => ( Bool -> a )
@@ -149,7 +150,7 @@ empty = OBDD
       }
 
 data Node v i = Leaf !Bool
-	    | Branch !v !i !i
+            | Branch !v !i !i
     deriving ( Eq, Ord )
 
 access :: OBDD v -> Node v ( OBDD v )
@@ -160,7 +161,7 @@ access s = case top s of
         Nothing -> error "OBDD.Data.access"
         Just n  -> case n of
             Leaf p -> error "Leaf in core"
-	    Branch v l r -> 
+            Branch v l r -> 
                 Branch v ( s { top = l } ) 
                          ( s { top = r } )
 
@@ -228,22 +229,22 @@ fresh = do
     return i
 
 cached :: Ord v
-	=> (Index, Index) 
-	-> ( State ( OBDD v ) Index )
-	-> State ( OBDD v ) Index
+        => (Index, Index) 
+        -> ( State ( OBDD v ) Index )
+        -> State ( OBDD v ) Index
 cached (l,r) action = do
     s <- get
     case IIM.lookup (l, r) $ cache s of
         Just i -> return i
-	Nothing -> do
-	    i <- action
-	    s <- get
-	    put $! s { cache = IIM.insert (l, r) i 
+        Nothing -> do
+            i <- action
+            s <- get
+            put $! s { cache = IIM.insert (l, r) i 
                               $ cache s }
-	    return i
+            return i
 
 register :: Ord v
-	 => Node v Index
+         => Node v Index
        -> State ( OBDD v ) Index
 register n = case n of
     Leaf False -> return 0
@@ -252,18 +253,18 @@ register n = case n of
       s <- get    
       case VIIM.lookup (v, l, r) ( icore s ) of
         Just i -> return i
-	Nothing -> do
-	        i <- fresh
-	        s <- get
-	        put $! s 
-		    { core = IM.insert i n $ core s
-		    , icore = VIIM.insert (v, l, r) i 
+        Nothing -> do
+                i <- fresh
+                s <- get
+                put $! s 
+                    { core = IM.insert i n $ core s
+                    , icore = VIIM.insert (v, l, r) i 
                             $ icore s
-		    }
-	        return i
+                    }
+                return i
 
 checked_register :: Ord v
-	 => Node v Index
+         => Node v Index
        -> State ( OBDD v ) Index
 checked_register n = case n of
     Branch v l r -> do
