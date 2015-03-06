@@ -55,9 +55,12 @@ no_threats n = OBDD.and $ do
         return $ OBDD.or [ OBDD.unit p False, OBDD.unit q False ]
 
 main = do
-    [ arg ] <- getArgs
-    let n :: Int ; n = read arg
+    args <- getArgs
+    case map read args :: [Int] of
+        [] -> mainf 8
+        [arg] -> mainf arg
 
+mainf n = do
     let d :: OBDD Position
         d = board n
 

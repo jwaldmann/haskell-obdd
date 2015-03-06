@@ -30,8 +30,12 @@ adjacent (a,b) (c,d) =
   
 main = do
     args <- getArgs
-    let [ width, height ] = map read args :: [ Int ]
-        ps = positions width height
+    case map read args :: [Int] of
+        [] -> mainf 3 10
+        [ width, height ] -> mainf width height
+
+mainf width height = do
+    let ps = positions width height
     print $ OBDD.number_of_models ( Data.Set.fromList ps )
           $ OBDD.and $ do
            p <- ps
