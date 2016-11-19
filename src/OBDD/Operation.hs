@@ -1,4 +1,5 @@
 {-# language ScopedTypeVariables #-}
+{-# language PatternGuards #-}
 
 module OBDD.Operation 
 
@@ -30,21 +31,21 @@ import qualified Prelude
 infixr 3 &&
 
 ( && ) :: Ord v => OBDD v -> OBDD v -> OBDD v
-( && ) = binary ( Prelude.&& )
+( && ) = symmetric_binary ( Prelude.&& )
 
 infixr 2 ||
 
 ( || ) :: Ord v => OBDD v -> OBDD v -> OBDD v
-( || ) = binary ( Prelude.|| )
+( || ) = symmetric_binary ( Prelude.|| )
 
 bool :: Ord v => OBDD v -> OBDD v -> OBDD v -> OBDD v
 bool f t p = (f && not p) || (t && p)
 
 equiv :: Ord v => OBDD v -> OBDD v -> OBDD v
-equiv = binary (==)
+equiv = symmetric_binary (==)
 
 xor :: Ord v => OBDD v -> OBDD v -> OBDD v
-xor   = binary (/=)
+xor   = symmetric_binary (/=)
 
 implies :: Ord v => OBDD v -> OBDD v -> OBDD v
 implies = binary ( <= )
@@ -90,11 +91,27 @@ unary op x = make $ do
     handle x
 
 
+data Symmetricity = Asymmetric | Symmetric deriving Show
+
 binary :: Ord v
       => ( Bool -> Bool -> Bool )
       -> OBDD v -> OBDD v -> OBDD v
-binary op x y = make $ do
+binary = binary_ Asymmetric
+      
+symmetric_binary :: Ord v
+      => ( Bool -> Bool -> Bool )
+      -> OBDD v -> OBDD v -> OBDD v
+symmetric_binary = binary_ Symmetric
+
+
+binary_ :: Ord v
+      => Symmetricity
+      -> ( Bool -> Bool -> Bool )
+      -> OBDD v -> OBDD v -> OBDD v
+
+binary_ sym op x y = make $ do
     let -- register = checked_register -- for testing
+        -- handle x y | Symmetric <- sym, top x > top y = handle y x
         handle x y = cached (top x, top y) $ case ( access x , access y ) of
                     ( Leaf p , Leaf q ) -> register $ Leaf $ op p q
                     ( ax, ay ) -> case comp ax ay of
