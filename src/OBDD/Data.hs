@@ -15,7 +15,7 @@ module OBDD.Data
 , number_of_models
 , some_model, all_models
 , fold, foldM
-, toDot
+, toDot, display
 -- * for internal use
 , Node (..)
 , make
@@ -49,9 +49,9 @@ import Control.Monad.State.Strict
    (State, runState, evalState, get, put, gets, modify)
 import qualified System.Random
 import Control.Monad.Fix
-import Control.Monad ( forM, guard )
+import Control.Monad ( forM, guard, void )
 import qualified Control.Monad ( foldM )
-
+import System.Process
 
 import Prelude hiding ( null )
 import qualified Prelude
@@ -277,6 +277,11 @@ checked_register n = case n of
       register n
     _ -> register n
 
+-- | Calls the @dot@ executable (must be in @$PATH@) to draw a diagram
+-- in an X11 window. Will block until this window is closed.
+-- Window can be closed gracefully by typing  'q'  when it has focus.
+display :: Show v => OBDD v -> IO ()
+display d = void $ readProcess "dot" [ "-Tx11" ] $ toDot d
 
 -- | toDot outputs a string in format suitable for input to the "dot" program
 -- from the graphviz suite.

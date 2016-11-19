@@ -17,7 +17,7 @@ Source-Repository head
     Location: git://github.com/jwaldmann/haskell-obdd.git
 
 Library
-    Build-Depends:       base==4.*, random, mtl, containers>=0.5, array
+    Build-Depends:       base==4.*, random, mtl, containers>=0.5, array, process
     Hs-Source-Dirs:	     src
     Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property
     Other-Modules:	     OBDD.IntIntMap, OBDD.VarIntIntMap
