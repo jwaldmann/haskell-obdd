@@ -3,6 +3,7 @@
 module OBDD.Operation 
 
 ( (&&), (||), not, and, or
+, bool, implies, equiv, xor
 , unary, binary
 , instantiate
 , exists, exists_many
@@ -23,16 +24,30 @@ import qualified Data.Set as S
 -- import Data.List ( foldl' )
 -- don't use, see below
 
-import Prelude hiding ( (&&), (||), and, or, not )
+import Prelude hiding ( (&&), (||), and, or, not, bool )
 import qualified Prelude
+
+infixr 3 &&
 
 ( && ) :: Ord v => OBDD v -> OBDD v -> OBDD v
 ( && ) = binary ( Prelude.&& )
 
+infixr 2 ||
+
 ( || ) :: Ord v => OBDD v -> OBDD v -> OBDD v
 ( || ) = binary ( Prelude.|| )
 
+bool :: Ord v => OBDD v -> OBDD v -> OBDD v -> OBDD v
+bool f t p = (f && not p) || (t && p)
 
+equiv :: Ord v => OBDD v -> OBDD v -> OBDD v
+equiv = binary (==)
+
+xor :: Ord v => OBDD v -> OBDD v -> OBDD v
+xor   = binary (/=)
+
+implies :: Ord v => OBDD v -> OBDD v -> OBDD v
+implies = binary ( <= )
 
 and :: Ord v => [ OBDD v ] -> OBDD v
 and = fold_by_size (constant True) (&&)
