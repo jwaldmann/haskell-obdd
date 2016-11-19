@@ -2,7 +2,7 @@
 
 module OBDD.Make 
 
-( constant, unit )
+( constant, unit, variable )
 
 where
 
@@ -22,3 +22,5 @@ unit v p = make $ do
     r <- register $ Leaf $     p
     register $ Branch v l r
 
+variable :: Ord v => v -> OBDD v
+variable v = unit v True
