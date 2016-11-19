@@ -52,6 +52,7 @@ import Control.Monad.Fix
 import Control.Monad ( forM, guard, void )
 import qualified Control.Monad ( foldM )
 import System.Process
+import Data.List (isPrefixOf, isSuffixOf)
 
 import Prelude hiding ( null )
 import qualified Prelude
@@ -301,7 +302,10 @@ toDot (OBDD idmap _ _ top _) =
                           _ -> idmap IM.! i
         in id &&& getNode
 
-    mkLabel lbl = "[label=\"" ++ lbl ++ "\"];"
+    unquote s = if isPrefixOf "\"" s && isSuffixOf "\"" s
+                then init $ tail s
+                else s
+    mkLabel lbl = "[label=\"" ++ unquote lbl ++ "\"];"
 
     helper (thisId, Leaf b) = return $
         -- switch to rectangle nodes for the leaf, before going back to ovals.
