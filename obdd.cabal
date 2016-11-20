@@ -41,4 +41,10 @@ test-suite obdd-queens2
     Main-Is: Queens2.hs
     Build-Depends: base, containers, obdd
     
+test-suite obdd-sort
+    Hs-Source-Dirs : examples
+    Type: exitcode-stdio-1.0
+    Main-Is: Sort.hs
+    Build-Depends: base, containers, obdd
+    Ghc-Options: -rtsopts    
 
