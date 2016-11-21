@@ -121,10 +121,13 @@ work w d s known = do
              Nothing -> do
                let go [] known = return (False, known)
                    go (c@(x,y):cs) known = do
-                     (a1,k1) <- work w (d-1) (next w s (x,y)) known
+		     let [s1,s2] = reverse
+		                 $ sortOn size
+		                 $ map (next w s) [ (x,y), (y,x) ]
+                     (a1,k1) <- work w (d-1) s1 known
                      if a1
                        then do
-                         (a2,k2) <- work w (d-1) (next w s (y,x)) k1
+                         (a2,k2) <- work w (d-1) s2 k1
                          if a2
                            then return (True, k2)
                            else go cs k2
