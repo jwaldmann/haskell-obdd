@@ -9,8 +9,9 @@ import Control.Monad ( guard, forM_, when, void, mzero, msum )
 import System.Environment ( getArgs )
 import qualified Data.Set as S
 import qualified Data.Map.Strict as M
-import Data.List (sortOn, tails, transpose)
+import Data.List (sort, sortOn, tails, transpose)
 import qualified Data.Tree as T
+import Data.Maybe (isJust)
 
 import Debug.Trace
 
@@ -57,20 +58,11 @@ input w = do
 
 vars w = S.fromList $ (,) <$> [1..w] <*> [1..w]
 
--- | a sorting (branching) program is either done
--- and it knows the proper order of elements,
--- or it compares to elements, and branches according to the result.
-data Sorter = Done [Int] | Ask (Integer, Comp) Sorter Sorter
-
-instance Show Sorter where
-  show s =
-    let go s = case s of
-          Done xs -> T.Node (show xs) []
-          Ask c l r -> T.Node (show c) [go l, go r]
-    in T.drawTree $ go s
+-- * poset enumeration
 
 data State =
      State { comps:: ! [Comp]
+           , poset :: ! Poset
            , args :: ! [Num]
            , form :: ! Bit
            , size :: ! Integer
@@ -80,57 +72,71 @@ start w =
   let i = input w
       f = ispermutation i
   in State { comps = []
+           , poset = mkposet []
            , args = map number i
            , form = f
            , size = number_of_models (vars w) f
            }
-
-improved_start w =
-   foldl (next w) (start w) $ map (\i -> (2*i,2*i+1)) [ 0 .. div w 2 - 1 ]
 
 next :: Int -> State -> Comp -> State
 next w s c =
   let cs' = c : comps s
       f = compat (args s) c && form s
   in  s { comps = cs'
+        , poset = mkposet cs'
         , form = f
         , size = number_of_models (vars w) f
         }
 
--- | (lazy) list of sorters for w elements, with depth at most d
-sorters w d =
-  let go d s = -- trace (show (d, size s)) $
-        if 1 == size s then return $ Done $ decode w $ form s
-        else if 2 ^ d < size s then mzero
-             else msum {- $ take 1 -} $ do
-               (c, s1 , s2) <-
-                   sortOn (\(c, s1,s2) -> max(size s1)(size s2)) $
-                 do
-                   comp@(x,y) <- comparators w
-                   let s1 = next w s (x,y)
-                   guard $ 1 <= size s1 Prelude.&& size s1 <= 2^(d-1)
-                   let s2 = next w s (y,x)
-                   guard $ 1 <= size s2 Prelude.&& size s2 <= 2^(d-1)
-                   return (comp, s1,s2)
-               return $ if size s1 > size s2
-                 -- taking the larger side first
-                 -- (in the hope it fails fast)
-                 then do
-                    l <- go (d-1) s1 ; r <- go (d-1) s2
-                    return $ Ask (size s, c) l r
-                 else do
-                    r <- go (d-1) s2 ; l <- go (d-1) s1 
-                    return $ Ask (size s, c) l r
-      s = improved_start w
-  in  go (d - length (comps s)) s
+run w d = do
+  (r, cache) <- work w d (start w) M.empty
+  putStrLn "contents of cache"
+  forM_ (M.toList cache) $ \(d,m) -> do
+    putStrLn $ unwords
+      [ "for level", show d, "with", show (M.size m), "elements" ]
+    forM_ (M.toList m) print
+  return r
 
-decode w f = do
-  let [ m ] = all_models f
-  i <- [ 1 .. w ]
-  return $ length $ dropWhile Prelude.not $ do
-    j <- [ 1 .. w ]
-    return $ m M.! (i,j)
-    
+work w d s known = do
+  -- print (d,comps s,size s)
+  if size s == 1
+    then return (True,known)
+    else if size s > 2^d
+         then return (False,known)
+         else do
+           let here = M.findWithDefault M.empty d known 
+           let seen = do
+                 (k,v) <- M.toList here
+                 guard $ isJust $ iso (poset s) k
+                 return (k,v)
+           case seen of
+             (k,v) : _ -> do
+               -- putStrLn $ "isomorphic to " ++ show k
+               return (v,known)
+             [] -> do
+               let go [] known = return (False, known)
+                   go (c@(x,y):cs) known = do
+                     (a1,k1) <- work w (d-1) (next w s (x,y)) known
+                     if a1
+                       then do
+                         (a2,k2) <- work w (d-1) (next w s (y,x)) k1
+                         if a2
+                           then return (True, k2)
+                           else go cs k2
+                       else do
+                         go cs k1
+               let candidates =
+                     filter (\ (x,y) -> Prelude.not $ S.member (x,y) $ poset s)
+                     $ filter (\ (x,y) -> Prelude.not $ S.member (y,x) $ poset s)
+                      $ comparators w
+               (r,known) <- go candidates known
+               putStrLn $ unwords [ "result for", show (comps s)
+                                  , "is", show r ]
+               return
+                 (r, M.insert d (M.insert (poset s) r here) known)
+
+-- * main
+
 main = getArgs >>= \ case
   [ ] -> void $ run 4 5
   [ w ] -> let b = ceiling
@@ -139,16 +145,66 @@ main = getArgs >>= \ case
            in search (read w) b
   [ w , d ] -> void $ run (read w) (read d)
 
-run w d = do
-  putStrLn $ unwords [ "find a sort algorithm for", show w,
-                       "inputs with at most", show d, "comparisons" ]
-  putStrLn $ unwords [ "initial comparisons", show $ comps $ improved_start w ]
-  case sorters w d of
-    Nothing    -> return False
-    Just s -> do print s ; return True
 
 search w d = run w d >>= \ case
   True -> return ()
   False -> search w (d+1)
   
 factorial n = product [1 .. n]
+
+-- * posets and their isomorphisms
+
+type Poset = S.Set Comp
+
+mkposet comps = transitive_closure $ S.fromList comps
+
+dot :: Poset -> Poset -> Poset
+dot p q = S.fromList $ do
+  (x,y1) <- S.toList p
+  (y2,z) <- S.toList q
+  guard $ y1 == y2
+  return (x,z)
+
+transitive_closure :: Poset -> Poset
+transitive_closure p =
+  let q = S.union p $ dot p p
+  in  if p == q then p else transitive_closure q
+      
+inputs  p x = map fst $ filter ((== x) . snd) $ S.toList p
+outputs p x = map snd $ filter ((== x) . fst) $ S.toList p
+
+elements p = S.union ( S.map fst p ) (S.map snd p )
+
+data Type = Dot | Type [Type] [Type] deriving (Eq, Ord, Show)
+
+types :: Poset -> M.Map Int Type
+types p = M.fromList $ zip (S.toList $ elements p) $ repeat Dot
+
+refine :: Poset ->   M.Map Int Type -> M.Map Int Type
+refine p t = M.fromList $ do
+  x <- S.toList $ elements p
+  return (x, Type ( sort $ map (t M.!) $ inputs  p x )
+                  ( sort $ map (t M.!) $ outputs p x ) )
+
+classes :: M.Map Int Type -> M.Map Type (S.Set Int)
+classes m = M.fromListWith S.union $ do
+  (k,v) <- M.toList m
+  return (v, S.singleton k)
+
+-- | compare with keys
+essence t = M.toAscList $ M.map S.size $ classes t
+
+partition t = sort $ M.elems $ classes t
+
+iso p1 p2 = do
+  let go t1 t2 = do
+        guard $ essence t1 == essence t2
+        let t1' = refine p1 t1
+            t2' = refine p2 t2
+        if (    partition t1 == partition t1'
+             Prelude.&& partition t2 == partition t2'
+           ) then return $ M.intersectionWith (,)
+                    (classes t1) (classes t2)
+          else go (refine p1 t1) (refine p2 t2)
+  go (types p1) (types p2)
+               
