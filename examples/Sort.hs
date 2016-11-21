@@ -113,7 +113,7 @@ work w d s known = do
              (k,v) : _ -> do
                -- putStrLn $ "isomorphic to " ++ show k
                return (v,known)
-             [] -> do
+             _ -> do
                let go [] known = return (False, known)
                    go (c@(x,y):cs) known = do
                      (a1,k1) <- work w (d-1) (next w s (x,y)) known
