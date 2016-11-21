@@ -2,11 +2,13 @@
 
 import Prelude hiding ((&&),(||),not,and,or,Num)
 import qualified Prelude
+import qualified Data.Bool 
 import OBDD hiding (size)
 import qualified OBDD as O
 
 import Control.Monad ( guard, forM_, when, void, mzero, msum )
 import System.Environment ( getArgs )
+import System.IO (hFlush, stdout)
 import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 import Data.List (sort, sortOn, tails, transpose)
@@ -83,17 +85,21 @@ next w s c =
   let cs' = c : comps s
       f = compat (args s) c && form s
   in  s { comps = cs'
-        , poset = mkposet cs'
+        , poset = -- mkposet cs'
+	    transitive_closure $ S.insert c $ poset s
         , form = f
         , size = number_of_models (vars w) f
         }
 
 run w d = do
+  putStrLn $ unwords [ "sort", show w, "items", "with", show d, "comparisons" ]
   (r, cache) <- work w d (start w) M.empty
-  putStrLn "contents of cache"
-  forM_ (M.toList cache) $ \(d,m) -> do
-    putStrLn $ unwords
-      [ "level", show d, "has", show (M.size m), "elements" ]
+  putStrLn ""
+  putStrLn $ unwords [ "sort", show w, "items", "with", show d, "comparisons", "is"
+     , Data.Bool.bool "IMPOSSIBLE" "POSSIBLE" r ]
+  putStrLn $ unwords [ "cache", "with", show (M.size cache), "entries" ]
+  when False $ forM_ (M.toList cache) $ \(k,v) -> do
+    putStrLn $ unwords [ show k, "=>", show v ]
     -- forM_ (M.toList m) print
   return r
 
@@ -104,11 +110,14 @@ work w d s known = do
     else if size s > 2^d
          then return (False,known)
          else do
-           let here = M.findWithDefault M.empty d known
-           case M.lookup (canonical $ poset s) here of
-             Just v -> do
-               -- putStrLn $ "isomorphic to " ++ show k
-               return (v,known)
+	   let verbose = False
+           case M.lookup (canonical $ poset s) known of
+             Just (r,prev) -> do
+               if verbose
+	         then putStrLn $ unwords [ show d, show $ size s, show (comps s)
+                                  , show r, "iso", show prev ]
+		 else putStr "!"
+               return (r,known)
              Nothing -> do
                let go [] known = return (False, known)
                    go (c@(x,y):cs) known = do
@@ -126,10 +135,13 @@ work w d s known = do
                      $ filter (\ (x,y) -> Prelude.not $ S.member (y,x) $ poset s)
                       $ comparators w
                (r,known) <- go candidates known
-               putStrLn $ unwords [ "result for", show (comps s)
-                                  , "is", show r ]
+               if verbose
+	         then putStrLn $ unwords [ show d, show $ size s, show (comps s)
+                                  , show r ]
+                 else putStr "." 
+  	       hFlush stdout	 
                return
-                 (r, M.insert d (M.insert (canonical $ poset s) r here) known)
+                 (r, M.insert (canonical $ poset s) (r, comps s) known)
 
 -- * main
 
@@ -138,7 +150,8 @@ main = getArgs >>= \ case
   [ w ] -> let b = ceiling
                  $ logBase 2 $ fromIntegral
                  $ factorial $ read w
-           in search (read w) b
+           in -- search (read w) b
+	       void $ run (read w) b
   [ w , d ] -> void $ run (read w) (read d)
 
 
