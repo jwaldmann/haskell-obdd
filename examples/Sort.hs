@@ -85,6 +85,9 @@ start w =
            , size = number_of_models (vars w) f
            }
 
+improved_start w =
+   foldl (next w) (start w) $ map (\i -> (2*i,2*i+1)) [ 0 .. div w 2 - 1 ]
+
 next :: Int -> State -> Comp -> State
 next w s c =
   let cs' = c : comps s
@@ -96,10 +99,10 @@ next w s c =
 
 -- | (lazy) list of sorters for w elements, with depth at most d
 sorters w d =
-  let go d s = trace (show (d, size s)) $
+  let go d s = -- trace (show (d, size s)) $
         if 1 == size s then return $ Done $ decode w $ form s
         else if 2 ^ d < size s then mzero
-             else msum $ take 1 $ do
+             else msum {- $ take 1 -} $ do
                (c, s1 , s2) <-
                    sortOn (\(c, s1,s2) -> max(size s1)(size s2)) $
                  do
@@ -118,7 +121,8 @@ sorters w d =
                  else do
                     r <- go (d-1) s2 ; l <- go (d-1) s1 
                     return $ Ask (size s, c) l r
-  in  go d $ start w
+      s = improved_start w
+  in  go (d - length (comps s)) s
 
 decode w f = do
   let [ m ] = all_models f
@@ -138,6 +142,7 @@ main = getArgs >>= \ case
 run w d = do
   putStrLn $ unwords [ "find a sort algorithm for", show w,
                        "inputs with at most", show d, "comparisons" ]
+  putStrLn $ unwords [ "initial comparisons", show $ comps $ improved_start w ]
   case sorters w d of
     Nothing    -> return False
     Just s -> do print s ; return True
