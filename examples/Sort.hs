@@ -187,7 +187,23 @@ outputs p x = map snd $ filter ((== x) . fst) $ S.toList p
 
 elements p = S.union ( S.map fst p ) (S.map snd p )
 
-data Type = Dot | Type [Type] [Type] deriving (Eq, Ord, Show)
+-- | the Int is the length, and it is used to speed up
+-- the derived Eq and Ord instance.
+data List a = List !Int ![a] deriving (Eq, Ord, Show)
+
+nil :: List a
+nil = List 0 []
+
+cons :: a -> List a -> List a
+cons x (List n xs) = List (n+1) (x:xs)
+
+list :: [a] -> List a
+list xs = List (length xs) xs
+
+instance Functor List where
+  fmap f (List n xs) = List n (map f xs)
+
+data Type = Dot | Type (List Type) (List Type) deriving (Eq, Ord, Show)
 
 types :: Poset -> M.Map Int Type
 types p = M.fromList $ zip (S.toList $ elements p) $ repeat Dot
@@ -195,8 +211,8 @@ types p = M.fromList $ zip (S.toList $ elements p) $ repeat Dot
 refine :: Poset ->   M.Map Int Type -> M.Map Int Type
 refine p t = M.fromList $ do
   x <- S.toList $ elements p
-  return (x, Type ( sort $ map (t M.!) $ inputs  p x )
-                  ( sort $ map (t M.!) $ outputs p x ) )
+  return (x, Type ( list $ sort $ map (t M.!) $ inputs  p x )
+                  ( list $ sort $ map (t M.!) $ outputs p x ) )
 
 classes :: M.Map Int Type -> M.Map Type (S.Set Int)
 classes m = M.fromListWith S.union $ do
