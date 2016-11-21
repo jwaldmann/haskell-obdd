@@ -93,8 +93,8 @@ run w d = do
   putStrLn "contents of cache"
   forM_ (M.toList cache) $ \(d,m) -> do
     putStrLn $ unwords
-      [ "for level", show d, "with", show (M.size m), "elements" ]
-    forM_ (M.toList m) print
+      [ "level", show d, "has", show (M.size m), "elements" ]
+    -- forM_ (M.toList m) print
   return r
 
 work w d s known = do
@@ -104,16 +104,12 @@ work w d s known = do
     else if size s > 2^d
          then return (False,known)
          else do
-           let here = M.findWithDefault M.empty d known 
-           let seen = do
-                 (k,v) <- M.toList here
-                 guard $ isJust $ iso (poset s) k
-                 return (k,v)
-           case seen of
-             (k,v) : _ -> do
+           let here = M.findWithDefault M.empty d known
+           case M.lookup (canonical $ poset s) here of
+             Just v -> do
                -- putStrLn $ "isomorphic to " ++ show k
                return (v,known)
-             _ -> do
+             Nothing -> do
                let go [] known = return (False, known)
                    go (c@(x,y):cs) known = do
                      (a1,k1) <- work w (d-1) (next w s (x,y)) known
@@ -133,7 +129,7 @@ work w d s known = do
                putStrLn $ unwords [ "result for", show (comps s)
                                   , "is", show r ]
                return
-                 (r, M.insert d (M.insert (poset s) r here) known)
+                 (r, M.insert d (M.insert (canonical $ poset s) r here) known)
 
 -- * main
 
@@ -194,17 +190,13 @@ classes m = M.fromListWith S.union $ do
 -- | compare with keys
 essence t = M.toAscList $ M.map S.size $ classes t
 
-partition t = sort $ M.elems $ classes t
+canonical po =
+  let go t p =
+        let t' = refine po t
+            c' = classes t
+            p' = sort $ M.elems c'
+        in  if p == p' then M.map S.size c' else go t' p'
+  in  go (types po) []
 
-iso p1 p2 = do
-  let go t1 t2 = do
-        guard $ essence t1 == essence t2
-        let t1' = refine p1 t1
-            t2' = refine p2 t2
-        if (    partition t1 == partition t1'
-             Prelude.&& partition t2 == partition t2'
-           ) then return $ M.intersectionWith (,)
-                    (classes t1) (classes t2)
-          else go (refine p1 t1) (refine p2 t2)
-  go (types p1) (types p2)
+
                
