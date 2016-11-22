@@ -1,6 +1,7 @@
 {-# language GeneralizedNewtypeDeriving #-}
 {-# language RecursiveDo #-}
 {-# language FlexibleContexts #-}
+{-# language TupleSections #-}
 
 -- | implementation of reduced ordered binary decision diagrams.
 
@@ -15,6 +16,7 @@ module OBDD.Data
 , number_of_models
 , some_model, all_models
 , fold, foldM
+, full_fold, full_foldM
 , toDot, display
 -- * for internal use
 , Node (..)
@@ -43,6 +45,7 @@ import qualified Data.Array as A
 
 import Data.Set ( Set )
 import qualified Data.Set as S
+import Data.Bool (bool)
 
 import Control.Arrow ( (&&&) )
 import Control.Monad.State.Strict
@@ -77,6 +80,14 @@ data OBDD v = OBDD
                -- (unary will be simulated by binary)
             }
 
+
+-- | Apply function in each node, bottom-up.
+-- return the value in the root node.
+-- Will cache intermediate results.
+-- You might think that 
+-- @count_models = fold (\b -> if b then 1 else 0) (\v l r -> l + r)@ 
+-- but that's not true because a path might omit variables.
+-- Use @full_fold@ to fold over interpolated nodes as well.
 fold :: Ord v 
      => ( Bool -> a )
      -> ( v -> a -> a -> a )
@@ -86,6 +97,9 @@ fold leaf branch o = runIdentity
            ( \ v l r -> return $ branch v l r )
            o
 
+-- | Run action in each node, bottum-up.
+-- return the value in the root node.
+-- Will cache intermediate results.
 foldM :: (Monad m, Ord v)
      => ( Bool -> m a )
      -> ( v -> a -> a -> m a )
@@ -102,6 +116,48 @@ foldM leaf branch o = do
           ) m0 $ IM.toAscList $ core o
     return $ m M.! top o
 
+-- | Apply function in each node, bottom-up.
+-- Also apply to interpolated nodes: when a link
+-- from a node to a child skips some variables:
+-- for each skipped variable, we run the @branch@ function
+-- on an interpolated node that contains this missing variable,
+-- and identical children.
+-- With this function, @number_of_models@
+-- can be implemented as 
+-- @full_fold vars (bool 0 1) ( const (+) )@.
+-- And it actually is, see the source.
+full_fold :: Ord v 
+     => Set v
+     -> ( Bool -> a )
+     -> ( v -> a -> a -> a )
+     -> OBDD v -> a
+full_fold vars leaf branch o = runIdentity 
+   $ full_foldM vars 
+           ( return . leaf )
+           ( \ v l r -> return $ branch v l r )
+           o
+
+full_foldM :: (Monad m, Ord v)
+     => Set v 
+     -> ( Bool -> m a )
+     -> ( v -> a -> a -> m a )
+     -> OBDD v -> m a
+full_foldM vars leaf branch o = do
+    let vs = S.toAscList vars
+        low = head vs
+        m = M.fromList $ zip vs $ tail vs
+        up v = M.lookup v m
+        interpolate now goal x | now == goal = return x
+        interpolate (Just now) goal x = 
+            branch now x x >>= interpolate (up now) goal
+    (a,res) <- foldM 
+          ( \ b -> (Just low ,) <$> leaf b )
+          ( \ v (p,l) (q,r) -> do
+                l' <- interpolate p (Just v) l
+                r' <- interpolate q (Just v) r
+                (up v,) <$> branch v l' r'
+          ) o
+    interpolate a Nothing res  
 
 icore_false = 0 :: Index  
 icore_true = 1 :: Index  
@@ -113,26 +169,8 @@ size = unIndex . next
 -- all variables that were used to construct it, since some  nodes may have been removed
 -- because they had identical children.
 number_of_models :: Ord v => Set v -> OBDD v ->  Integer
-number_of_models vs o = 
-    let fun o vs = do
-            m <- get
-            case access o of
-                   Leaf c -> case c of
-                        False -> return 0
-                        True -> return $ 2 ^ length vs
-                   Branch v l r -> do
-                       let ( pre, _ : post ) = span (/= v) vs
-                       case M.lookup ( top o ) m of
-                          Just x -> return $ ( 2 ^ length pre ) * x
-                          Nothing -> do
-                             xl <- fun l post
-                             xr <- fun r post
-                             let xlr = xl + xr
-                             m <- get
-                             put $! M.insert ( top o ) xlr m
-                             return $ ( 2 ^ length pre ) * xlr
-    in evalState ( fun o $ reverse $ S.toAscList vs ) M.empty
-    
+number_of_models vars o = 
+  full_fold vars (bool 0 1) ( const (+) ) o
 
 empty :: OBDD v
 empty = OBDD 
