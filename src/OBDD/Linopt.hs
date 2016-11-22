@@ -1,50 +1,39 @@
 module OBDD.Linopt (linopt) where
 
-import OBDD (OBDD, fold)
+import OBDD (OBDD, full_fold)
 
 import qualified Data.Map.Strict as M
-
-type Item v w = (w, [(v,Bool)])
+import Data.Bool (bool)
 
 -- | solve the constrained linear optimisation problem:
 -- returns an assignment that is a model of the BDD
 -- and maximises the sum of weights of variables.
+-- The set of keys of the weight map *must* be the
+-- full set of variables.
 linopt :: ( Ord v , Num w, Ord w ) 
        => OBDD v 
        -> M.Map v w 
        -> Maybe (w, M.Map v Bool)
-linopt d m = ( \(w,kvs) -> (w,M.fromList kvs) ) <$>
-   fold ( \ leaf  -> if leaf then Just (0, []) else Nothing )
-       ( \ v ml mr -> case (ml,mr) of
-          (Nothing, Just r) -> Just $   add m v $ fill m v r
-          (Just l, Nothing) -> Just $ noadd m v $ fill m v l
+linopt d m = full_fold (M.keysSet m) 
+   ( bool Nothing ( Just (0, M.empty) ))
+   ( \ v ml mr -> case (ml,mr) of
+          (Just l, Nothing) -> Just $ noadd m v l
+          (Nothing, Just r) -> Just $   add m v r
           (Just l,  Just r) -> Just $
-                  let l' = noadd m v $ fill m v l 
-                      r' =   add m v $ fill m v r
+                  let l' = noadd m v l
+                      r' =   add m v r
                   in  if fst l' >= fst r' then l' else r'
+          -- the following *can* happen for
+          -- interpolated nodes directly above False:
+          (Nothing, Nothing) -> Nothing
        )
        d
 
-fill :: (Ord v, Num w, Ord w) 
-     => M.Map v w -> v -> Item v w -> Item v w
-fill m v (w, xs) = 
-    let vs = (case xs of
-               [] -> id
-               (u,_):_ -> takeWhile (\(k,v) -> k > u) ) 
-           $ dropWhile (\(k,_) -> k >= v) 
-           $ M.toDescList m
-    in  foldr (choiceadd m) (w, xs) $ map fst vs
-
-choiceadd :: (Ord v, Num w, Ord w) 
-           => M.Map v w -> v -> Item v w -> Item v w
-choiceadd m v a = case M.lookup v m of
-    Just u | u > 0 -> add m v a
-    _ -> noadd m v a
+type Item v w = (w, M.Map v Bool)
 
 noadd, add :: (Ord v, Num w) 
            => M.Map v w -> v -> Item v w -> Item v w
-noadd m v (w,xs) = 
-  (w          , (v,False) : xs)
-add   m v (w,xs) = 
-  (w + M.findWithDefault 0 v m, (v, True) : xs)
-
+noadd m v (w, b) = 
+  (w                          , M.insert v False b)
+add   m v (w, b) = 
+  (w + M.findWithDefault 0 v m, M.insert v True  b)

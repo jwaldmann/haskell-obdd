@@ -9,6 +9,7 @@ module OBDD.Operation
 , instantiate
 , exists, exists_many
 , fold, foldM
+, full_fold, full_foldM
 )
 
 where

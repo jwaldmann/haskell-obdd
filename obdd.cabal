@@ -1,5 +1,5 @@
 Name:                obdd
-Version:             0.5.0
+Version:             0.6.0
 Cabal-Version:       >= 1.8
 Build-type: Simple
 Synopsis:            Ordered Reduced Binary Decision Diagrams
@@ -55,3 +55,9 @@ test-suite obdd-sort
     Build-Depends: base, containers, obdd
     Ghc-Options: -rtsopts    
 
+test-suite obdd-mm0916
+    Hs-Source-Dirs : examples
+    Type: exitcode-stdio-1.0
+    Main-Is: MM0916.hs
+    Build-Depends: base, containers, obdd, array
+    Ghc-Options: -rtsopts
