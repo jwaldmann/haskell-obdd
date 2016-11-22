@@ -4,7 +4,7 @@
 module OBDD.Operation 
 
 ( (&&), (||), not, and, or
-, bool, implies, equiv, xor
+, ite, bool, implies, equiv, xor
 , unary, binary
 , instantiate
 , exists, exists_many
@@ -40,6 +40,9 @@ infixr 2 ||
 
 bool :: Ord v => OBDD v -> OBDD v -> OBDD v -> OBDD v
 bool f t p = (f && not p) || (t && p)
+
+ite :: Ord v => OBDD v -> OBDD v -> OBDD v -> OBDD v
+ite i t e = bool e t i
 
 equiv :: Ord v => OBDD v -> OBDD v -> OBDD v
 equiv = symmetric_binary (==)
