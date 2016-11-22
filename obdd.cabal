@@ -1,5 +1,5 @@
 Name:                obdd
-Version:             0.4.0
+Version:             0.5.0
 Cabal-Version:       >= 1.8
 Build-type: Simple
 Synopsis:            Ordered Reduced Binary Decision Diagrams
@@ -19,7 +19,7 @@ Source-Repository head
 Library
     Build-Depends:       base==4.*, random, mtl, containers>=0.5, array, process
     Hs-Source-Dirs:	     src
-    Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property
+    Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property, OBDD.Linopt
     Other-Modules:	     OBDD.IntIntMap, OBDD.VarIntIntMap
     ghc-options: -funbox-strict-fields
 
@@ -33,12 +33,19 @@ test-suite obdd-queens
     Hs-Source-Dirs : examples
     Type: exitcode-stdio-1.0
     Main-Is: Queens.hs
+    ghc-options: -threaded -rtsopts
     Build-Depends: base, containers, obdd
 
 test-suite obdd-queens2
     Hs-Source-Dirs : examples
     Type: exitcode-stdio-1.0
     Main-Is: Queens2.hs
+    Build-Depends: base, containers, obdd
+
+test-suite obdd-weight
+    Hs-Source-Dirs : examples
+    Type: exitcode-stdio-1.0
+    Main-Is: Weight.hs
     Build-Depends: base, containers, obdd
     
 test-suite obdd-sort
