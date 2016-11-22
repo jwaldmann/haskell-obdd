@@ -228,20 +228,11 @@ some_model s = case access s of
 -- | list of all models (WARNING not using 
 -- variables that had been deleted)
 all_models :: Ord v => OBDD v -> [ Map v Bool ]
-all_models s = case access s of
-    Leaf True -> return  M.empty
-    Leaf False -> [ ]
-    Branch v l r -> do
-        let nonempty_children = do
-                 ( p, t ) <- [ (False, l), (True, r) ]        
-                 guard $ case access t of
-                      Leaf False -> False
-                      _ -> True
-                 return ( p, t )
-        (p, t) <- nonempty_children
-        m <- all_models t
-        return $ M.insert v p m 
-        
+all_models = 
+  fold ( bool [] [ M.empty ] )
+       ( \ v l r -> (M.insert v False <$> l)
+                 ++ (M.insert v True  <$> r) )
+
 select_one :: [a] -> IO a
 select_one xs | not ( Prelude.null xs ) = do
     i <- System.Random.randomRIO ( 0, length xs - 1 )
