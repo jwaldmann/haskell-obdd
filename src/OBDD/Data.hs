@@ -51,6 +51,7 @@ import qualified System.Random
 import Control.Monad.Fix
 import Control.Monad ( forM, guard, void )
 import qualified Control.Monad ( foldM )
+import Data.Functor.Identity
 import System.Process
 import Data.List (isPrefixOf, isSuffixOf)
 
@@ -80,18 +81,10 @@ fold :: Ord v
      => ( Bool -> a )
      -> ( v -> a -> a -> a )
      -> OBDD v -> a
-fold leaf branch o =
-    let f = leaf False ; t = leaf True
-        m0 = M.fromList 
-           [(icore_false,f), (icore_true,t)]
-        m = foldl ( \ m (i,n) -> 
-            let val = case n of
-                    Branch v l r -> 
-                        branch v (m M.! l) (m M.! r) 
-            in M.insert i val m
-          ) m0 $ IM.toAscList $ core o
-    in  m M.! top o
-
+fold leaf branch o = runIdentity 
+   $ foldM ( return . leaf )
+           ( \ v l r -> return $ branch v l r )
+           o
 
 foldM :: (Monad m, Ord v)
      => ( Bool -> m a )
