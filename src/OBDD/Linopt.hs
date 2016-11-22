@@ -1,4 +1,4 @@
-module OBDD.Linopt where
+module OBDD.Linopt (linopt) where
 
 import OBDD (OBDD, fold)
 
@@ -25,16 +25,26 @@ linopt d m = ( \(w,kvs) -> (w,M.fromList kvs) ) <$>
        )
        d
 
-fill :: (Ord v, Num w) => M.Map v w -> v -> Item v w -> Item v w
+fill :: (Ord v, Num w, Ord w) 
+     => M.Map v w -> v -> Item v w -> Item v w
 fill m v (w, xs) = 
     let vs = (case xs of
                [] -> id
                (u,_):_ -> takeWhile (\(k,v) -> k > u) ) 
            $ dropWhile (\(k,_) -> k >= v) 
            $ M.toDescList m
-    in  foldr (add m) (w, xs) $ map fst vs
+    in  foldr (choiceadd m) (w, xs) $ map fst vs
 
-noadd, add :: (Ord v, Num w) => M.Map v w -> v -> Item v w -> Item v w
-noadd m v (w,xs) = (w          , (v,False) : xs)
-add   m v (w,xs) = (w + m M.! v, (v, True) : xs)
+choiceadd :: (Ord v, Num w, Ord w) 
+           => M.Map v w -> v -> Item v w -> Item v w
+choiceadd m v a = case M.lookup v m of
+    Just u | u > 0 -> add m v a
+    _ -> noadd m v a
+
+noadd, add :: (Ord v, Num w) 
+           => M.Map v w -> v -> Item v w -> Item v w
+noadd m v (w,xs) = 
+  (w          , (v,False) : xs)
+add   m v (w,xs) = 
+  (w + M.findWithDefault 0 v m, (v, True) : xs)
 
