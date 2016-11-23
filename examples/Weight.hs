@@ -1,5 +1,7 @@
 {-
 
+NOTE: the following comment is lying, see https://github.com/jwaldmann/haskell-obdd/issues/5
+
 The minimal number of knights needed to occupy or attack
 every square on an n×n chessboard
 (i.e., domination numbers for the n×n knight graphs)

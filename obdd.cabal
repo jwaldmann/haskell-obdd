@@ -1,5 +1,5 @@
 Name:                obdd
-Version:             0.6.0
+Version:             0.6.1
 Cabal-Version:       >= 1.8
 Build-type: Simple
 Synopsis:            Ordered Reduced Binary Decision Diagrams
@@ -8,7 +8,7 @@ Description:
   an efficient representation for formulas in propositional logic.
   .
   This is mostly educational.
-  The BDDs do not share nodes and this might introduce inefficiencies.
+  The BDDs do not share nodes (there is no persistent BDD base) and this might introduce inefficiencies.
   .
   An important (for me, in teaching) feature is
   that I can immediately draw the BDD to an X11 window (via graphviz).
@@ -20,7 +20,7 @@ Description:
   > let f [] = false; f (x:y:zs) = x && y || f zs
   > display P.$ f P.$ P.map variable [1,2,3,4,5,6]
   > display P.$ f P.$ P.map variable [1,4,2,5,3,6]
-
+  .
   If you want better performance,
   use <http://vlsi.colorado.edu/%7Efabio/CUDD/ CUDD>
   <https://hackage.haskell.org/package/cudd Haskell bindings>,
