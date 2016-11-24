@@ -64,9 +64,8 @@ board n q a = let r = ray n  in and
     $ (  exactly q $ queen <$> positions n )
     : ( for ( positions n) $ \ p -> 
       (not $ queen p) || (not $ attacked p) )
-    ++ ( for (positions n) $ \ p -> 
-     implies (attacked p) $ exactly a $ for directions $ \ d ->
-       r A.! (d,p) )
+    ++ ( for (positions n) $ \ p ->  attacked p ==>
+           ( exactly a $ for directions $ \ d -> r A.! (d,p)))
     
 
 -- | ray n ! (d,p) == looking in direction d from p,
@@ -96,8 +95,8 @@ exactly k xs =
   else exactly_rectangle k xs
 
 exactly_rectangle n xs = last $ 
-  foldl ( \ cs x -> zipWith ( \ a b -> ite x a b )
-                    (false : cs) cs 
+  foldl ( \ cs x -> zipWith ( \ a b -> choose a b x )
+                    cs (false : cs) 
         ) (true : replicate n false) xs
 
 exactly_direct k xs = atmost k xs && atleast k xs

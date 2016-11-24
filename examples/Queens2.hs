@@ -38,12 +38,12 @@ board n = and
 
 atmostone xs =
   let go (n,o) [] = n || o
-      go (n,o) (x:xs) = go (bool n false x, bool o n x) xs
+      go (n,o) (x:xs) = go (choose n false x, choose o n x) xs
   in  go (true,false) xs
 
 exactlyone xs =
   let go (n,o) [] = o
-      go (n,o) (x:xs) = go (bool n false x, bool o n x) xs
+      go (n,o) (x:xs) = go (choose n false x, choose o n x) xs
   in  go (true,false) xs
 
 handle check f n = OBDD.and $ do

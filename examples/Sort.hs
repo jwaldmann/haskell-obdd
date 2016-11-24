@@ -29,7 +29,7 @@ ispermutation xss =
 exactlyone :: [Bit] -> Bit
 exactlyone xs =
   let go (n,o) [] = o
-      go (n,o) (x:xs) = go (bool n false x, bool o n x) xs
+      go (n,o) (x:xs) = go (choose n false x, choose o n x) xs
   in  go (true,false) xs
 
 -- | (weakly) increasing sequence of bits
@@ -43,7 +43,7 @@ lt :: Num -> Num -> Bit
 lt xs ys = or $ zipWith (\x y -> not x && y) xs ys
 
 leq :: Num -> Num -> Bit
-leq xs ys = and $ zipWith implies xs ys
+leq xs ys = and $ zipWith (==>) xs ys
 
 type Comp = (Int,Int)
 
@@ -86,7 +86,7 @@ next w s c =
       f = compat (args s) c && form s
   in  s { comps = cs'
         , poset = -- mkposet cs'
-	    transitive_closure $ S.insert c $ poset s
+            transitive_closure $ S.insert c $ poset s
         , form = f
         , size = number_of_models (vars w) f
         }

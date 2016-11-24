@@ -3,8 +3,8 @@
 
 module OBDD.Operation 
 
-( (&&), (||), not, and, or
-, ite, bool, implies, equiv, xor
+( Boolean(..)
+, equiv
 , unary, binary
 , instantiate
 , exists, exists_many
@@ -16,6 +16,8 @@ where
 
 import OBDD.Data
 import OBDD.Make
+import Ersatz.Bit 
+import Data.Foldable (toList)
 
 import qualified Data.List ( sortBy)
 import Data.Function (on)
@@ -23,46 +25,22 @@ import Data.Function (on)
 import Data.Set ( Set )
 import qualified Data.Set as S
 
--- import Data.List ( foldl' )
--- don't use, see below
-
 import Prelude hiding ( (&&), (||), and, or, not, bool )
 import qualified Prelude
 
-infixr 3 &&
-
-( && ) :: Ord v => OBDD v -> OBDD v -> OBDD v
-( && ) = symmetric_binary ( Prelude.&& )
-
-infixr 2 ||
-
-( || ) :: Ord v => OBDD v -> OBDD v -> OBDD v
-( || ) = symmetric_binary ( Prelude.|| )
-
-bool :: Ord v => OBDD v -> OBDD v -> OBDD v -> OBDD v
-bool f t p = (f && not p) || (t && p)
-
-ite :: Ord v => OBDD v -> OBDD v -> OBDD v -> OBDD v
-ite i t e = bool e t i
+instance Ord v => Boolean (OBDD v) where
+  bool f = constant f
+  not = unary ( Prelude.not )
+  ( && ) = symmetric_binary ( Prelude.&& )
+  ( || ) = symmetric_binary ( Prelude.|| )
+  choose no yes sel = (no && not sel) || (yes && sel)
+  xor   = symmetric_binary (/=)
+  ( ==> ) = binary ( <= )
+  all p = fold_by_size (constant True ) (&&) . map p . toList
+  any p = fold_by_size (constant False) (||) . map p . toList
 
 equiv :: Ord v => OBDD v -> OBDD v -> OBDD v
 equiv = symmetric_binary (==)
-
-xor :: Ord v => OBDD v -> OBDD v -> OBDD v
-xor   = symmetric_binary (/=)
-
-implies :: Ord v => OBDD v -> OBDD v -> OBDD v
-implies = binary ( <= )
-
-and :: Ord v => [ OBDD v ] -> OBDD v
-and = fold_by_size (constant True) (&&)
--- and = foldr ( && ) ( constant True ) 
--- writing foldl or fold' here 
--- makes performance MUCH worse!
-
-or :: Ord v => [ OBDD v ] -> OBDD v
-or = fold_by_size (constant False) (||)
--- or = foldr ( || ) ( constant False ) 
 
 fold_by_size base reduce fs =
     let handle fs = case fs of
@@ -76,11 +54,6 @@ fold_by_size base reduce fs =
             _ -> f : gs
     in  handle $ Data.List.sortBy (compare `on` size) fs
 
-
--- | FIXME this is a silly implementation. Negation should be done
--- by switching values in Leaves (?)
-not :: Ord v => OBDD v -> OBDD v 
-not = unary ( Prelude.not )
 
 unary :: Ord v 
       => ( Bool -> Bool )

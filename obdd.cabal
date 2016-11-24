@@ -1,5 +1,5 @@
 Name:                obdd
-Version:             0.6.1
+Version:             0.7.0
 Cabal-Version:       >= 1.8
 Build-type: Simple
 Synopsis:            Ordered Reduced Binary Decision Diagrams
@@ -38,7 +38,7 @@ Source-Repository head
     Location: git://github.com/jwaldmann/haskell-obdd.git
 
 Library
-    Build-Depends:       base==4.*, random, mtl, containers>=0.5, array, process
+    Build-Depends:       base==4.*, random, mtl, containers>=0.5, array, process, ersatz
     Hs-Source-Dirs:	     src
     Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property, OBDD.Linopt
     Other-Modules:	     OBDD.IntIntMap, OBDD.VarIntIntMap

@@ -2,7 +2,7 @@
 
 module OBDD.Make 
 
-( constant, unit, variable, false, true )
+( constant, unit, variable )
 
 where
 
@@ -14,12 +14,6 @@ import qualified Data.Map as M
 constant :: Ord v => Bool -> OBDD v
 constant b = make $ do
     register $ Leaf b
-
-false :: Ord v => OBDD v
-false = constant False
-
-true :: Ord v => OBDD v
-true  = constant True
 
 -- | Variable with given parity
 unit :: Ord v => v -> Bool -> OBDD v
