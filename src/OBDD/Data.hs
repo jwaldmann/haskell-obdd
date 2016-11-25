@@ -14,7 +14,7 @@ module OBDD.Data
 -- * for external use
 , null, satisfiable
 , number_of_models
-, some_model, all_models
+, paths, models
 , fold, foldM
 , full_fold, full_foldM
 , toDot, display
@@ -227,11 +227,17 @@ some_model s = case access s of
 
 -- | list of all models (WARNING not using 
 -- variables that had been deleted)
-all_models :: Ord v => OBDD v -> [ Map v Bool ]
-all_models = 
+paths :: Ord v => OBDD v -> [ Map v Bool ]
+paths = 
   fold ( bool [] [ M.empty ] )
        ( \ v l r -> (M.insert v False <$> l)
                  ++ (M.insert v True  <$> r) )
+
+models vars =
+  full_fold vars ( bool [] [ M.empty ] )
+       ( \ v l r -> (M.insert v False <$> l)
+                 ++ (M.insert v True  <$> r) )
+  
 
 select_one :: [a] -> IO a
 select_one xs | not ( Prelude.null xs ) = do

@@ -8,6 +8,7 @@ module OBDD.Operation
 , unary, binary
 , instantiate
 , exists, exists_many
+, forall, forall_many
 , fold, foldM
 , full_fold, full_foldM
 )
@@ -113,12 +114,12 @@ binary_ sym op x y = make $ do
 
 -- | remove variables existentially
 -- TODO: needs better implementation
-exists_many :: Ord v 
-            => Set v
+exists_many :: (Foldable c, Ord v)
+            => c v
             -> OBDD v
             -> OBDD v
 exists_many vars x =
-    foldr exists x $ S.toList vars 
+    foldr exists x vars 
 
 -- | remove variable existentially
 -- TODO: needs better implementation
@@ -126,6 +127,14 @@ exists :: Ord v
       => v
       -> OBDD v -> OBDD v
 exists var x = 
+    instantiate var False x || instantiate var True x
+
+forall_many :: (Foldable c, Ord v) => c v -> OBDD v -> OBDD v
+forall_many vars x = 
+    foldr forall x vars 
+
+forall :: Ord v => v -> OBDD v -> OBDD v
+forall var x = 
     instantiate var False x || instantiate var True x
 
 -- | replace variable by value
