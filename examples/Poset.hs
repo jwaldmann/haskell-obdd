@@ -13,6 +13,8 @@ import Data.Ix
 import Data.List (transpose, sortOn)
 import Data.IORef
 import Control.Monad ( forM_, when)
+import System.IO
+import Data.Ratio
 
 -- * driver
 
@@ -21,18 +23,21 @@ main = getArgs >>= \ case
   [s] -> investigate $ read s
 
 investigate n = do
-  state <- newIORef 1.0
+  state <- newIORef 1
   forM_ (posets n) $ \ cs -> do
     let (t, es) = extensions n cs
     case sortOn ( \ (c,z) -> max z (t-z) ) es of
       [] -> return ()
       f@(c,z) : _ -> do
-        let g = fromIntegral (min z (t-z)) / fromIntegral t
+        let g = (min z (t-z)) % fromIntegral t
         best <- readIORef state
-        when (g <= best) $ do
-          print (g, filter (\(x,y) -> x < y) cs, t, f)
+        if (g < best) then do
+	  putStrLn ""
+          print (fromRational g :: Double, g, filter (\(x,y) -> x < y) cs, t, f)
           writeIORef state g
-      
+	else do
+	  putStr "."
+        hFlush stdout
 
 -- * enumerate compatible permutations
 
