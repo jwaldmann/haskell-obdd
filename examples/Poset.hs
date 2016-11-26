@@ -10,7 +10,7 @@ import qualified Data.Map.Strict as M
 
 import qualified Data.Array as A
 import Data.Ix
-import Data.List (transpose, sortOn)
+import Data.List (transpose, sortOn, partition)
 import Data.IORef
 import Control.Monad ( forM_, when)
 import System.IO
@@ -31,20 +31,21 @@ investigate n = do
   forM_ pos $ \ cs0 -> do
     let cs =  filter (\(x,y) -> x < y) cs0
     when verbose $ print cs
-    let (t, es) = extensions n cs
-    case sortOn ( \ (c,z) -> max z (t-z) ) es of
-      [] -> return ()
-      f@(c,z) : _ -> do
-        let g = (min z (t-z)) % fromIntegral t
-        best <- readIORef state
-        if (g < best) then do
-	  putStrLn ""
-          print (fromRational g :: Double, g, cs, t, f)
-          writeIORef state g
-	else do
-	  -- putStr "."
-	  return ()
-        hFlush stdout
+    best <- readIORef state
+    let value (c,z) = 1 - max z (t-z) % t
+        (t, es) = extensions n cs
+        (far,near) = partition (\ this -> value this < best) es
+    if (Prelude.null near) then do
+      let f = last $ sortOn value far
+          g = value f
+      putStrLn ""
+      print (fromRational g :: Double, g, cs, t, f)
+      when (g < 1%3) $ error "huh"
+      writeIORef state g
+    else do
+      putStr "."
+      return ()
+    hFlush stdout
 
 -- * enumerate compatible permutations
 
