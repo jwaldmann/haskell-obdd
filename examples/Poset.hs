@@ -22,9 +22,15 @@ main = getArgs >>= \ case
   [] -> investigate 4
   [s] -> investigate $ read s
 
+verbose = False
+
 investigate n = do
   state <- newIORef 1
-  forM_ (posets n) $ \ cs -> do
+  let (c, pos) = posets n
+  putStrLn $ unwords [ "number of interesting posets is", show c ]
+  forM_ pos $ \ cs0 -> do
+    let cs =  filter (\(x,y) -> x < y) cs0
+    when verbose $ print cs
     let (t, es) = extensions n cs
     case sortOn ( \ (c,z) -> max z (t-z) ) es of
       [] -> return ()
@@ -33,10 +39,11 @@ investigate n = do
         best <- readIORef state
         if (g < best) then do
 	  putStrLn ""
-          print (fromRational g :: Double, g, filter (\(x,y) -> x < y) cs, t, f)
+          print (fromRational g :: Double, g, cs, t, f)
           writeIORef state g
 	else do
-	  putStr "."
+	  -- putStr "."
+	  return ()
         hFlush stdout
 
 -- * enumerate compatible permutations
@@ -91,9 +98,31 @@ leq xs ys = and $ zipWith ( ==> ) xs ys
 -- * enumerate posets
 
 posets n =
-  let r = relation ((1,1),(n,n)) $ \ p -> variable p
-      vars = S.fromList $ pairs r
-  in  map edges $ models vars $ and [ poset r, upward r, notwins r ]
+  let r = relation ((1,1),(n,n)) $ \ (i,j) ->
+        case compare i j of
+	  LT -> variable (i,j)
+	  EQ -> true
+	  GT -> false
+      vars = S.fromList $ filter (\(i,j) -> i < j ) $ pairs r
+      f = and [ poset r, connected r, upward r, notwins r, nocutvertex r ]
+  in  ( number_of_models vars f
+      , map edges $ models vars f
+      )
+
+nocutvertex r = and $ do
+  x <- domain r
+  return $ not $ cutvertex r x
+
+cutvertex r x = and $ do
+  y <- domain r
+  return $ r ! (x,y) || r ! (y,x)
+
+connected r = full $ transitive_closure $ r || mirror r
+
+transitive_closure r = 
+  iterate (\ r -> r || times r r) r !! log2 (length $ domain r)
+
+log2 n = if n > 1 then succ $ log2 $ div n 2 else 0
 
 poset r = reflexive r && antisymmetric r && transitive r
 
