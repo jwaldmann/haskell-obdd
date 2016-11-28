@@ -15,6 +15,7 @@ module OBDD.Data
 , null, satisfiable
 , number_of_models
 , paths, models
+, some_model
 , fold, foldM
 , full_fold, full_foldM
 -- * for internal use

@@ -13,11 +13,11 @@ RUN  :  ./Queens 8
 
 import OBDD (OBDD)
 import qualified OBDD
-import qualified OBDD.Data (toDot)
 
 import Control.Monad ( guard )
 import System.Environment ( getArgs )
-import qualified Data.Set 
+import qualified Data.Set
+import qualified Data.Text.IO as T
 
 type Position = (Int,Int)
 
@@ -74,4 +74,4 @@ mainf n = do
     m <- OBDD.some_model d
     print m
 
-    -- writeFile "Queens.dot" $ OBDD.Data.toDot d
+    -- T.writeFile "Queens.dot" $ OBDD.toDot d

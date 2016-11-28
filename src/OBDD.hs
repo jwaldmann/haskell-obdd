@@ -7,7 +7,7 @@
 
 module OBDD 
 
-( OBDD
+( module OBDD.Data
 , module OBDD.Property
 , module OBDD.Operation
 , module OBDD.Display
@@ -16,7 +16,14 @@ module OBDD
 
 where
 
-import OBDD.Data ( OBDD )
+import OBDD.Data ( OBDD , size
+                 , null, satisfiable
+                 , number_of_models
+                 , paths, models
+                 , some_model
+                 , fold, foldM
+                 , full_fold, full_foldM
+                 )
 import OBDD.Property
 import OBDD.Operation
 import OBDD.Display

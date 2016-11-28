@@ -55,7 +55,7 @@ test-suite obdd-queens
     Type: exitcode-stdio-1.0
     Main-Is: Queens.hs
     ghc-options: -threaded -rtsopts
-    Build-Depends: base, containers, obdd
+    Build-Depends: base, containers, obdd, text
 
 test-suite obdd-queens2
     Hs-Source-Dirs : examples
