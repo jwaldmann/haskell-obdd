@@ -7,15 +7,17 @@
 
 module OBDD 
 
-( OBDD, display
+( OBDD
 , module OBDD.Property
 , module OBDD.Operation
+, module OBDD.Display
 , module OBDD.Make
 ) 
 
 where
 
-import OBDD.Data ( OBDD, display )
+import OBDD.Data ( OBDD )
 import OBDD.Property
 import OBDD.Operation
+import OBDD.Display
 import OBDD.Make

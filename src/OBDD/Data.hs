@@ -17,7 +17,6 @@ module OBDD.Data
 , paths, models
 , fold, foldM
 , full_fold, full_foldM
-, toDot, display
 -- * for internal use
 , Node (..)
 , make
@@ -55,7 +54,6 @@ import Control.Monad.Fix
 import Control.Monad ( forM, guard, void )
 import qualified Control.Monad ( foldM )
 import Data.Functor.Identity
-import System.Process
 import Data.List (isPrefixOf, isSuffixOf)
 
 import Prelude hiding ( null )
@@ -225,14 +223,14 @@ some_model s = case access s of
         Just m <- some_model t
         return $ Just $ M.insert v p m 
 
--- | list of all models (WARNING not using 
--- variables that had been deleted)
+-- | list of all paths
 paths :: Ord v => OBDD v -> [ Map v Bool ]
 paths = 
   fold ( bool [] [ M.empty ] )
        ( \ v l r -> (M.insert v False <$> l)
                  ++ (M.insert v True  <$> r) )
 
+-- | list of all models (a.k.a. minterms)
 models vars =
   full_fold vars ( bool [] [ M.empty ] )
        ( \ v l r -> (M.insert v False <$> l)
@@ -305,57 +303,3 @@ checked_register n = case n of
       check_var_ordering l ; check_var_ordering r
       register n
     _ -> register n
-
--- | Calls the @dot@ executable (must be in @$PATH@) to draw a diagram
--- in an X11 window. Will block until this window is closed.
--- Window can be closed gracefully by typing  'q'  when it has focus.
-display :: Show v => OBDD v -> IO ()
-display d = void $ readProcess "dot" [ "-Tx11" ] $ toDot d
-
--- | toDot outputs a string in format suitable for input to the "dot" program
--- from the graphviz suite.
-toDot :: (Show v) => OBDD v -> String
-toDot (OBDD idmap _ _ top _) =
-    unlines [ "digraph BDD {"
-            -- Start in oval mode
-            , "node[shape=oval];"
-            , evalState (helper $ idToNode top) S.empty
-            , "}"
-            ]
-  where
-    idToNode =
-        let getNode = \i -> case i of
-                          0 -> Leaf False
-                          1 -> Leaf True
-                          _ -> idmap IM.! i
-        in id &&& getNode
-
-    unquote s = if isPrefixOf "\"" s && isSuffixOf "\"" s
-                then init $ tail s
-                else s
-    mkLabel lbl = "[label=\"" ++ unquote lbl ++ "\"];"
-
-    helper (thisId, Leaf b) = return $
-        -- switch to rectangle nodes for the leaf, before going back to ovals.
-        unlines [ "node[shape=rectangle];"
-                , show thisId ++ mkLabel (show b)
-                , "node[shape=oval];"
-                ]
-    helper (thisId, Branch vid l r) = do
-        -- Ensure we don't traverse children multiple times, if we have more
-        -- than one edge into a given node.
-        beenHere <- gets (thisId `S.member`)
-        if beenHere
-            then return ""
-            else do
-                lstr <- helper $ idToNode l
-                rstr <- helper $ idToNode r
-                modify (thisId `S.insert`)
-                let idStr = show thisId
-                return $ unlines
-                   [ idStr ++ mkLabel (show vid)
-                   , lstr
-                   , idStr ++ "->" ++ show l ++ mkLabel "0"
-                   , rstr
-                   , idStr ++ "->" ++ show r ++ mkLabel "1"
-                   ]
