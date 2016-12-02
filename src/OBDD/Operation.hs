@@ -28,6 +28,7 @@ import qualified Data.Set as S
 
 import Prelude hiding ( (&&), (||), and, or, not, bool )
 import qualified Prelude
+import qualified Data.Bool
 
 instance Ord v => Boolean (OBDD v) where
   bool f = constant f
@@ -112,8 +113,13 @@ binary_ sym op x y = make $ do
                             register $ Branch v l' r'
     handle x y
 
+comp x y = case (x , y) of
+    ( Leaf {} , Leaf {} ) -> EQ
+    ( Branch {} , Leaf {} ) -> GT
+    ( Leaf {} , Branch {} ) ->  LT
+    ( Branch v1 _ _ , Branch v2 _ _ ) -> compare v1 v2
+
 -- | remove variables existentially
--- TODO: needs better implementation
 exists_many :: (Foldable c, Ord v)
             => c v
             -> OBDD v
@@ -122,42 +128,28 @@ exists_many vars x =
     foldr exists x vars 
 
 -- | remove variable existentially
--- TODO: needs better implementation
 exists :: Ord v
       => v
       -> OBDD v -> OBDD v
-exists var x = 
-    instantiate var False x || instantiate var True x
+exists var = fold bool
+  ( \ v l r -> if var == v then l || r else choose l r (variable v) )
 
 forall_many :: (Foldable c, Ord v) => c v -> OBDD v -> OBDD v
 forall_many vars x = 
     foldr forall x vars 
 
 forall :: Ord v => v -> OBDD v -> OBDD v
-forall var x = 
-    instantiate var False x || instantiate var True x
+forall var = fold bool
+  ( \ v l r -> if var == v then l && r else choose l r (variable v) )
 
 -- | replace variable by value
 instantiate :: Ord v => 
             v -> Bool 
             -> OBDD v
             -> OBDD v
-instantiate var val x = make $ do
-    let handle x = cached ( top x, top x ) $ case access x of
-            Leaf p -> register $ Leaf p
-            Branch v l r -> 
-                if v == var then do
-                     let t = if val then r else l
-                     handle t
-                else  do
-                     l' <- handle l
-                     r' <- handle r
-                     register $ Branch v l' r' 
-    handle x
+instantiate var val = fold bool
+  ( \ v l r ->
+    if var == v then Data.Bool.bool l r val
+    else choose l r (variable v) )
 
-comp x y = case (x , y) of
-    ( Leaf {} , Leaf {} ) -> EQ
-    ( Branch {} , Leaf {} ) -> GT
-    ( Leaf {} , Branch {} ) ->  LT
-    ( Branch v1 _ _ , Branch v2 _ _ ) -> compare v1 v2
     
