@@ -2,11 +2,14 @@ import Prelude hiding ((&&),(||),not,and,or)
 import OBDD
 import OBDD.Cube
 
-data V = L Int | R Int | Out Int
-       deriving (Eq, Ord, Show)
+data T = L | R | Out   deriving (Eq, Ord, Show)
+
+vars n = (,) <$> [1..n] <*> [L,R,Out]
+
+check n = relprime (vars n) $ not $ form n
 
 form n =
-  let make f = variable . f <$> [1..n]
+  let make f = ( \ v -> variable (v,f)) <$> [1..n]
       (rs,c) = add (make L) (make R)
   in  not c && and ( zipWith equiv rs $ make Out )
 
