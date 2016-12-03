@@ -14,7 +14,7 @@ module OBDD.Data
 -- * for external use
 , null, satisfiable
 , number_of_models
-, paths, models
+, variables, paths, models
 , some_model
 , fold, foldM
 , full_fold, full_foldM
@@ -142,7 +142,7 @@ full_foldM :: (Monad m, Ord v)
      -> ( v -> a -> a -> m a )
      -> OBDD v -> m a
 full_foldM vars leaf branch o = do
-    let vs = S.toAscList vars
+    let vs = S.toAscList $ S.union (variables o) vars
         low = head vs
         m = M.fromList $ zip vs $ tail vs
         up v = M.lookup v m
@@ -223,6 +223,11 @@ some_model s = case access s of
         (p, t) <- select_one nonempty_children
         Just m <- some_model t
         return $ Just $ M.insert v p m 
+
+-- | all variables that occur in the nodes
+variables :: Ord v => OBDD v -> S.Set v
+variables f = fold (\ b ->  S.empty )
+         ( \ v l r -> S.insert v $ S.union l r ) f
 
 -- | list of all paths
 paths :: Ord v => OBDD v -> [ Map v Bool ]

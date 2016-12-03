@@ -8,8 +8,8 @@ import Data.Bool (bool)
 -- | solve the constrained linear optimisation problem:
 -- returns an assignment that is a model of the BDD
 -- and maximises the sum of weights of variables.
--- The set of keys of the weight map *must* be the
--- full set of variables.
+-- Keys missing from the weight map, but present in the BDD,
+-- get weight zero.
 linopt :: ( Ord v , Num w, Ord w ) 
        => OBDD v 
        -> M.Map v w 
