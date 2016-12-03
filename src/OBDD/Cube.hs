@@ -1,12 +1,10 @@
--- | This should really use theory from O. Coudert , J. C. Madre:
--- A New Method to Compute Prime and Essential Prime Implicants of Boolean Functions (1993) 
--- http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.461.7854
-
 {-# language FlexibleContexts #-}
+{-# LANGUAGE TupleSections #-}
 
 module OBDD.Cube where
 
 import Prelude hiding ((&&),(||),not,and,or)
+import qualified Prelude
 import OBDD
 
 import qualified Data.Bool 
@@ -15,25 +13,89 @@ import Control.Applicative
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import Data.List (partition, sortOn)
 
--- | A cube is a minimal conjunction of literals.
--- It represents a set of models (paths to True in the BDD).
--- "Minimal" means that if any literal is dropped from a cube,
--- then it represents at least one path that is not a model.
+import Debug.Trace
+
 type Cube v = M.Map v Bool
 
-data Check = Sign | Occur deriving (Eq, Ord, Show)
+primes :: Ord v => OBDD v -> [Cube v]
+primes d =
+  let process m = M.fromList $ do
+        ((v,Sign), b) <- M.toList m
+        return (v, b)
+  in map process $ paths $ prime d
+
+nice :: Show v => Cube v -> String
+nice c = "(" ++ do
+    (v,b) <- M.toList c
+    (if b then " " else " -") ++ show v
+  ++ ")"
+
+data Check = Sign | Occurs | Original
+           deriving (Eq, Ord, Show)
+
+sign v = variable (v, Sign)
+occurs v = variable (v, Occurs)
+original v = variable (v, Original)
+
+process c = M.fromList $ do
+        ((v,Occurs),True) <- M.toList c
+        return (v, c M.! (v,Sign))
 
 
-lift :: Ord v => OBDD v -> OBDD (v, Check)
-lift = fold  bool
-  ( \ v l r ->  not (variable (v,Sign)) && l
-             || variable (v,Sign) && r
-  )
+-- | O. Coudert , J. C. Madre:
+-- http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.38.3330
 
-relprime :: Ord v => [v] -> OBDD v -> OBDD (v, Check)
-relprime vars f =
-  let ff = lift f
-      correct = foldr exists ff $ map (\v -> (v,Occur)) vars
-      
-  in  correct
+prime :: Ord v => OBDD v -> OBDD (v, Check)
+prime = snd
+  . fold ( \ b -> ( bool b, bool b ))
+         ( \ v (fl,pl) (fr,pr) -> ( choose fl fr (variable v)
+               , let common = prime (fl && fr)
+                 in      not (occurs v) && common
+                     || occurs v && not (sign v) && pl && not common
+                     || occurs v &&     (sign v) && pr && not common
+               )
+         )
+
+
+-- * naive way of finding a minimal set of clauses
+
+dnf f =
+  let ps = primes f
+      ms = -- paths f
+        models (variables f) f
+      covering = do
+        m <- ms
+        return $ S.fromList $ do
+                   (i,p) <- zip [0..] ps
+                   guard $ M.isSubmapOf p m
+                   return i
+      r = greed covering
+  in  map (ps !!) $ S.toList r
+
+
+cnf f = map (M.map Prelude.not) $ dnf $ not f
+
+greed [] = S.empty
+greed could =
+  let count = M.unionsWith (+) $ do
+        c <- could
+        return $ M.fromList $ zip (S.toList c) $ repeat 1
+      this = fst $ last $ sortOn snd $ M.toList count 
+  in    S.insert this
+      $ greed $ filter ( \p -> S.notMember this p ) could
+        
+
+reduce [] = S.empty
+reduce covering = 
+  let (singular,plural) = partition ((==1) . S.size) covering
+  in if Prelude.null singular then greed plural
+     else 
+      let pick = S.unions singular
+          remain = filter ( S.null . S.intersection pick ) plural
+      in  S.union pick $ reduce remain
+
+
+clause c = and $ do (v,b) <- M.toList c ; return $ unit v b
+
