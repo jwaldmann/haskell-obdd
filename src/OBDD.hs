@@ -19,7 +19,7 @@ where
 import OBDD.Data ( OBDD , size
                  , null, satisfiable
                  , number_of_models
-                 , paths, models
+                 , variables, paths, models
                  , some_model
                  , fold, foldM
                  , full_fold, full_foldM
