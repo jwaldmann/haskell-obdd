@@ -59,7 +59,7 @@ prime = snd
          )
 
 
--- * naive way of finding a minimal set of clauses
+-- * naive way of finding a minimal set of clauses.
 
 dnf f =
   let ps = primes f
