@@ -13,8 +13,9 @@ vars n = (,) <$> [1..n] <*> [L,R,Out]
 main = getArgs >>= \ case
  [ "add", s] -> out $ cnf $ form add $ read s
  [ "mul", s] -> out $ cnf $ form mul $ read s
- [ "hist", s] -> out $ cnf $ function (read s) histogram 
- [ "sort", s] -> out $ cnf $ function (read s) sortnet
+ [ "hist", s] -> out $ cnf $ function (read s) hist
+ [ "sort", s] -> out $ cnf $ function (read s) sort
+ -- [ "merge", s] -> out $ cnf $ function (read s) merge
 
 out cs = mapM_ (\(k,v) -> putStrLn $ show k ++ " " ++ nice v)
        $ zip [0..] cs
@@ -24,14 +25,14 @@ function w f =
       output = map ( variable . (, Out) ) [1 .. ]
   in  and $ zipWith equiv (f input) output
 
-sortnet xs =
+sort xs =
   let insert ys x =
         zipWith ( \ a b -> a || b && x ) ys ( true : ys )
   in  foldl insert (replicate (length xs) false) xs
 
 -- | histogram xs == ys where  ys !! i <=> exactly i xs,
 -- produces a one-hot bit vector.
-histogram xs =
+hist xs =
   let insert ys x =
         zipWith ( \ a b -> choose a b x ) ys ( false : ys )
   in  foldl insert (true : replicate (length xs) false) xs
