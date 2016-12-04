@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# language LambdaCase #-}
 
 import Prelude hiding ((&&),(||),not,and,or)
@@ -5,17 +6,36 @@ import OBDD
 import OBDD.Cube
 import System.Environment (getArgs)
 
-data T = L | R | Out   deriving (Eq, Ord, Show)
+data T = In | L | R | Out   deriving (Eq, Ord, Show)
 
 vars n = (,) <$> [1..n] <*> [L,R,Out]
 
 main = getArgs >>= \ case
  [ "add", s] -> out $ cnf $ form add $ read s
  [ "mul", s] -> out $ cnf $ form mul $ read s
+ [ "hist", s] -> out $ cnf $ function (read s) histogram 
+ [ "sort", s] -> out $ cnf $ function (read s) sortnet
 
 out cs = mapM_ (\(k,v) -> putStrLn $ show k ++ " " ++ nice v)
        $ zip [0..] cs
 
+function w f = 
+  let input = map ( variable . (, In) ) [1 .. w]
+      output = map ( variable . (, Out) ) [1 .. ]
+  in  and $ zipWith equiv (f input) output
+
+sortnet xs =
+  let insert ys x =
+        zipWith ( \ a b -> a || b && x ) ys ( true : ys )
+  in  foldl insert (replicate (length xs) false) xs
+
+-- | histogram xs == ys where  ys !! i <=> exactly i xs,
+-- produces a one-hot bit vector.
+histogram xs =
+  let insert ys x =
+        zipWith ( \ a b -> choose a b x ) ys ( false : ys )
+  in  foldl insert (true : replicate (length xs) false) xs
+  
 form fun n =
   let make f = ( \ v -> variable (v,f)) <$> [1..n]
       (pre,post) = splitAt n $ fun (make L) (make R)
