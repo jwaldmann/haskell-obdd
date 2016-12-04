@@ -63,39 +63,32 @@ prime = snd
 
 dnf f =
   let ps = primes f
-      ms = -- paths f
-        models (variables f) f
+      ms = models (variables f) f
       covering = do
         m <- ms
         return $ S.fromList $ do
                    (i,p) <- zip [0..] ps
                    guard $ M.isSubmapOf p m
                    return i
-      r = greed covering
+      cost = M.fromList $ zip [0..] $ map M.size ps
+      r = greed cost covering
   in  map (ps !!) $ S.toList r
 
 
 cnf f = map (M.map Prelude.not) $ dnf $ not f
 
-greed [] = S.empty
-greed could =
+greed cost [] = S.empty
+greed cost could =
   let count = M.unionsWith (+) $ do
         c <- could
         return $ M.fromList $ zip (S.toList c) $ repeat 1
-      this = fst $ last $ sortOn snd $ M.toList count 
+      this = fst
+           $ head
+           $ sortOn snd
+           $ map (\(k,v) -> (k, (negate v, cost M.! k)))
+           $ M.toList count 
   in    S.insert this
-      $ greed $ filter ( \p -> S.notMember this p ) could
-        
-
-reduce [] = S.empty
-reduce covering = 
-  let (singular,plural) = partition ((==1) . S.size) covering
-  in if Prelude.null singular then greed plural
-     else 
-      let pick = S.unions singular
-          remain = filter ( S.null . S.intersection pick ) plural
-      in  S.union pick $ reduce remain
-
+      $ greed cost $ filter ( \p -> S.notMember this p ) could
 
 clause c = and $ do (v,b) <- M.toList c ; return $ unit v b
 
