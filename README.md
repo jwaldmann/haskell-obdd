@@ -19,5 +19,5 @@ display P.$ f P.$ P.map variable [1,4,2,5,3,6]
 
 If you want better performance,
 use [CUDD](http://vlsi.colorado.edu/%7Efabio/CUDD/)
-[Haskell bindings](https://hackage.haskell.org/package/cudd),
-see [this example](https://gitlab.imn.htwk-leipzig.de/waldmann/min-comp-sort)
+Haskell bindings ([low level](https://hackage.haskell.org/package/cudd),
+[high level](https://github.com/jwaldmann/cudd-ersatz)).
