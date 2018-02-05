@@ -50,6 +50,12 @@ test-suite obdd-placement
     Main-Is: Placement.hs
     Build-Depends: base, containers, obdd
 
+test-suite obdd-domino
+    Hs-Source-Dirs: examples
+    Type: exitcode-stdio-1.0
+    Main-Is: Domino.hs
+    Build-Depends: base, containers, obdd
+
 test-suite obdd-cubism
     Hs-Source-Dirs : examples
     Type: exitcode-stdio-1.0
