@@ -6,11 +6,12 @@ module Domino where
 
 import Control.Monad (guard)
 import System.Environment (getArgs)
+import qualified Data.Map
 import qualified Data.Set
 
 import qualified OBDD
 
-dominoes h w = rows ++ cols
+dominoes w h = rows ++ cols
     where rows = positions [1..h-1] [1..w] $ \x y -> ((x, y), (x+1, y))
           cols = positions [1..h] [1..w-1] $ \x y -> ((x, y), (x, y+1))
           positions xs ys f = do
@@ -18,12 +19,12 @@ dominoes h w = rows ++ cols
             y <- ys
             return (f x y)
 
-positions h w = do
+positions w h = do
     x <- [1..h]
     y <- [1..w]
     return (x, y)
 
-dominoFormula h w = OBDD.and [ everyPosCovered, noPosCoveredTwice ]
+dominoFormula w h = OBDD.and [ everyPosCovered, noPosCoveredTwice ]
     where everyPosCovered = OBDD.and $ do
                                 -- forall fields f \in F
                                 f <- fields
@@ -48,36 +49,39 @@ dominoFormula h w = OBDD.and [ everyPosCovered, noPosCoveredTwice ]
                                               OBDD.unit q True,
                                               OBDD.constant (f `isCoveredBy` q)
                                            ]
-          fields = positions h w
-          placements = dominoes h w
+          fields = positions w h
+          placements = dominoes w h
           f `isCoveredBy` p = f == fst p || f == snd p
 
-printPos h w pos = putStr $ concat $ do
+prettySolution w h ds = putStr $ concat $ do
     x <- [1..h]
     y <- [1..w]
-    let l = if (x, y) == pos
-            then "x"
-            else "."
-    return $ if y == w
-             then l ++ "\n"
-             else l
+    let letter = case find (\(domino, _) -> fst domino == (x, y) || snd domino == (x, y)) withNames of
+                     Nothing -> "."
+                     Just (_, letter) -> letter:[]
+    return $ if y == w then letter ++ "\n" else letter
+    where withNames = if length names < length ds
+                      then error "not enough names"
+                      else zip ds names
+          names = ['0'..'9'] ++ ['a'..'z'] ++ ['A'..'Z']
+          find f xs = case filter f xs of
+                          []  -> Nothing
+                          x:_ -> Just x
 
-printPositions h w ps = putStr $ concat $ do
-    x <- [1..h]
-    y <- [1..w]
-    let l = if any (== (x, y)) ps
-            then "x"
-            else "."
-    return $ if y == w
-             then l ++ "\n"
-             else l
-
-printDominoes h w ds = printPositions h w $ concat $ map (\(p, q) -> [p, q]) ds
+prettySolve w h =
+    mapM_ (\ds -> prettySolution w h ds >> putStrLn "")
+    . map (map fst . filter snd)
+    . map (Data.Map.toList) $
+    OBDD.models (Data.Set.fromList $ dominoes w h) $ dominoFormula w h
 
 main = do
     args <- getArgs
     let [width, height] = case map read args :: [Int] of
-              [] -> [3, 4]
+              [] -> [4, 3]
               [width, height] -> [width, height]
-    print $ OBDD.number_of_models (Data.Set.fromList $ dominoes height width)
-          $ dominoFormula height width
+    let formula = dominoFormula width height
+    mapM_ (\ds -> prettySolution width height ds >> putStrLn "")
+        . map (map fst . filter snd)
+        . map (Data.Map.toList) $
+        OBDD.models (Data.Set.fromList $ dominoes width height) formula
+    print $ OBDD.number_of_models (Data.Set.fromList $ dominoes width height) formula
