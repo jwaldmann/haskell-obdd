@@ -11,7 +11,7 @@ module Main where
 
 import Control.Monad (guard, when)
 import Data.Maybe (isJust)
-import System.Environment (getArgs, getEnvironment)
+import System.Environment (getArgs, lookupEnv)
 import qualified Data.Map
 import qualified Data.Set
 
@@ -86,7 +86,7 @@ main = do
               [] -> [4, 3]
               [width, height] -> [width, height]
     let formula = dominoFormula width height
-    verbose <- getEnvironment >>= \env -> return $ isJust $ lookup "VERBOSE" env
+    verbose <- lookupEnv "VERBOSE" >>= return . isJust
     when verbose $ mapM_ (\ds -> prettySolution width height ds >> putStrLn "")
                    . map (map fst . filter snd)
                    . map (Data.Map.toList) $
