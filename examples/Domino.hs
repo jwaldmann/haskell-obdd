@@ -4,12 +4,14 @@ pieces?
 
 Usage: ./Domino 4 3
        time stack runghc examples/Domino.hs 4 9
+       VERBOSE=1 stack runghc examples/Domino.hs 2 3
    or: ghci> prettySolve 4 3
 -}
 module Main where
 
-import Control.Monad (guard)
-import System.Environment (getArgs)
+import Control.Monad (guard, when)
+import Data.Maybe (isJust)
+import System.Environment (getArgs, getEnvironment)
 import qualified Data.Map
 import qualified Data.Set
 
@@ -84,8 +86,9 @@ main = do
               [] -> [4, 3]
               [width, height] -> [width, height]
     let formula = dominoFormula width height
-    mapM_ (\ds -> prettySolution width height ds >> putStrLn "")
-        . map (map fst . filter snd)
-        . map (Data.Map.toList) $
-        OBDD.models (Data.Set.fromList $ dominoes width height) formula
+    verbose <- getEnvironment >>= \env -> return $ isJust $ lookup "VERBOSE" env
+    when verbose $ mapM_ (\ds -> prettySolution width height ds >> putStrLn "")
+                   . map (map fst . filter snd)
+                   . map (Data.Map.toList) $
+                   OBDD.models (Data.Set.fromList $ dominoes width height) formula
     print $ OBDD.number_of_models (Data.Set.fromList $ dominoes width height) formula
