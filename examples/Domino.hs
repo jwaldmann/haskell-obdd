@@ -3,6 +3,7 @@ In how many ways can a n x m board be entirely covered by 2 x 1 domino
 pieces?
 
 Usage: ./Domino 4 3
+       time stack runghc examples/Domino.hs 4 9
    or: ghci> prettySolve 4 3
 -}
 module Main where
