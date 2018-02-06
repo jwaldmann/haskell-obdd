@@ -5,7 +5,7 @@ pieces?
 Usage: ./Domino 4 3
    or: ghci> prettySolve 4 3
 -}
-module Domino where
+module Main where
 
 import Control.Monad (guard)
 import System.Environment (getArgs)
