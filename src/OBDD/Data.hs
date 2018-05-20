@@ -25,6 +25,7 @@ module OBDD.Data
 , top
 , access
 , not_
+, assocs
 )
 
 where
@@ -76,6 +77,9 @@ data OBDD v = OBDD
             , next :: !Index
             , top :: !Index
             }
+
+assocs :: OBDD v -> [(Index, Node v Index)]
+assocs o = IM.toAscList $ core o
 
 -- | Apply function in each node, bottom-up.
 -- return the value in the root node.

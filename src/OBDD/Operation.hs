@@ -26,7 +26,7 @@ import qualified OBDD.IntIntMap as IIM
 import qualified Data.Map as M
 
 import qualified Control.Monad.State.Strict as T
-
+import Control.Monad (forM_)
 import qualified Data.List ( sortBy)
 import Data.Function (on)
 
@@ -94,12 +94,10 @@ symmetric_binary :: Ord v
       -> OBDD v -> OBDD v -> OBDD v
 symmetric_binary = binary_ Symmetric
 
-
 binary_ :: Ord v
       => Symmetricity
       -> ( Bool -> Bool -> Bool )
       -> OBDD v -> OBDD v -> OBDD v
-
 -- FIXME https://github.com/jwaldmann/haskell-obdd/issues/4
 binary_ _ op x y = make $ do
     let -- register = checked_register -- for testing
@@ -127,6 +125,7 @@ binary_ _ op x y = make $ do
                             T.lift $ register $ Branch v l' r'
     flip T.evalStateT IIM.empty $ handle x y
 
+{-# inline cachedM #-}
 cachedM arg act = do
   c <- T.get
   case M.lookup arg c of
@@ -135,6 +134,7 @@ cachedM arg act = do
     Just res -> do
       return res
 
+{-# inline cachedIM #-}
 cachedIM arg act = do
   c <- T.get
   case IM.lookup arg c of
@@ -143,6 +143,7 @@ cachedIM arg act = do
     Just res -> do
       return res
 
+{-# inline cachedIIM #-}
 cachedIIM arg act = do
   c <- T.get
   case IIM.lookup arg c of

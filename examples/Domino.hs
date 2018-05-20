@@ -9,13 +9,15 @@ Usage: ./Domino 4 3
 -}
 module Main where
 
+import Prelude hiding (bool,not,and,or,any,all,(&&),(||))
 import Control.Monad (guard, when)
 import Data.Maybe (isJust)
 import System.Environment (getArgs, lookupEnv)
 import qualified Data.Map
 import qualified Data.Set
+import Data.List (tails)
 
-import qualified OBDD
+import OBDD
 
 dominoes w h = rows ++ cols
     where rows = positions [1..h-1] [1..w] $ \x y -> ((x, y), (x+1, y))
@@ -30,34 +32,15 @@ positions w h = do
     y <- [1..w]
     return (x, y)
 
-dominoFormula w h = OBDD.and [ everyPosCovered, noPosCoveredTwice ]
-    where everyPosCovered = OBDD.and $ do
-                                -- forall fields f \in F
-                                f <- fields
-                                return $ OBDD.or $ do
-                                -- forall placements of pieces p \in P
-                                    p <- placements
-                                    return $ OBDD.and [
-                                        OBDD.unit p True,                 -- placement is chosen
-                                        OBDD.constant (f `isCoveredBy` p) -- f is covered by placement p
-                                     ]
-          noPosCoveredTwice = OBDD.and $ do
-                                  f <- fields
-                                  return $ OBDD.not $ OBDD.or $ do
-                                      p <- placements
-                                      return $ OBDD.or $ do
-                                          q <- placements
-                                          guard $ p /= q
-                                          return $ OBDD.and [
-                                              OBDD.unit p True,
-                                              OBDD.constant (f `isCoveredBy` p),
+exactly_one xs = or xs && atmost_one xs
+atmost_one xs = and $ do
+  x : ys <- tails xs ; y <- ys ; return $ not $ x && y
 
-                                              OBDD.unit q True,
-                                              OBDD.constant (f `isCoveredBy` q)
-                                           ]
-          fields = positions w h
-          placements = dominoes w h
-          f `isCoveredBy` p = f == fst p || f == snd p
+dominoFormula w h =
+  all ( \ f -> exactly_one (map variable $ filter (isCoveredBy f) (dominoes w h) )
+      ) (positions w h)
+
+f `isCoveredBy` p = f == fst p || f == snd p
 
 prettySolution w h ds = putStr $ concat $ do
     x <- [1..h]
@@ -78,7 +61,7 @@ prettySolve w h =
     mapM_ (\ds -> prettySolution w h ds >> putStrLn "")
     . map (map fst . filter snd)
     . map (Data.Map.toList) $
-    OBDD.models (Data.Set.fromList $ dominoes w h) $ dominoFormula w h
+    models (Data.Set.fromList $ dominoes w h) $ dominoFormula w h
 
 main = do
     args <- getArgs
@@ -90,5 +73,5 @@ main = do
     when verbose $ mapM_ (\ds -> prettySolution width height ds >> putStrLn "")
                    . map (map fst . filter snd)
                    . map (Data.Map.toList) $
-                   OBDD.models (Data.Set.fromList $ dominoes width height) formula
-    print $ OBDD.number_of_models (Data.Set.fromList $ dominoes width height) formula
+                   models (Data.Set.fromList $ dominoes width height) formula
+    print $ number_of_models (Data.Set.fromList $ dominoes width height) formula
