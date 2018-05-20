@@ -9,15 +9,16 @@ Usage: ./Domino 4 3
 -}
 module Main where
 
+import Prelude hiding (bool,not,and,or,any,all,(&&),(||))
 import Control.Monad (guard, when)
 import Data.Maybe (isJust)
 import System.Environment (getArgs, lookupEnv)
 import qualified Data.Map
 import qualified Data.Set
+import Data.List (tails)
 
 import Prelude hiding ((&&),(||),not,and,or,all,any)
 import OBDD
-import qualified OBDD
 
 dominoes w h = rows ++ cols
     where rows = positions [1..h-1] [1..w] $ \x y -> ((x, y), (x+1, y))
@@ -26,25 +27,13 @@ dominoes w h = rows ++ cols
 
 positions w h = (,) <$> [1..h] <*> [1..w]
 
-dominoFormula w h = and [ everyPosCovered, noPosCoveredTwice ]
-    where everyPosCovered = -- and $ do
-                                -- forall fields f \in F
-			    flip all fields $ \ f -> 	
-                                -- f <- fields
-                                -- return $
-				or $ do
-                                -- forall placements of pieces p \in P
-                                    p <- placements
-                                    return $ and [
-                                        OBDD.unit p True,                 -- placement is chosen
-                                        OBDD.constant (f `isCoveredBy` p) -- f is covered by placement p
-                                     ]
-          noPosCoveredTwice= and $ do
-                                  f <- fields
-                                  return $ atmost_one $ map (flip OBDD.unit True) $ filter (f `isCoveredBy`) placements
-          fields = positions w h
-          placements = dominoes w h
-          f `isCoveredBy` p = f == fst p || f == snd p
+dominoFormula w h =
+  all ( \ f -> exactly_one (map variable $ filter (isCoveredBy f) (dominoes w h) )
+      ) (positions w h)
+
+f `isCoveredBy` p = f == fst p || f == snd p
+
+exactly_one xs = or xs && atmost_one xs
 
 atmost_one :: Boolean b => [b] -> b
 atmost_one = atmost_one_lin
@@ -83,7 +72,7 @@ prettySolve w h =
     mapM_ (\ds -> prettySolution w h ds >> putStrLn "")
     . map (map fst . filter snd)
     . map (Data.Map.toList) $
-    OBDD.models (Data.Set.fromList $ dominoes w h) $ dominoFormula w h
+    models (Data.Set.fromList $ dominoes w h) $ dominoFormula w h
 
 main = do
     args <- getArgs
@@ -95,5 +84,5 @@ main = do
     when verbose $ mapM_ (\ds -> prettySolution width height ds >> putStrLn "")
                    . map (map fst . filter snd)
                    . map (Data.Map.toList) $
-                   OBDD.models (Data.Set.fromList $ dominoes width height) formula
-    print $ OBDD.number_of_models (Data.Set.fromList $ dominoes width height) formula
+                   models (Data.Set.fromList $ dominoes width height) formula
+    print $ number_of_models (Data.Set.fromList $ dominoes width height) formula

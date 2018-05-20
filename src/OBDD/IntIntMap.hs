@@ -1,7 +1,7 @@
 module OBDD.IntIntMap 
        
 ( IntIntMap ()       
-, empty, lookup, insert, singleton
+, empty, lookup, insert, singleton, (!)
 )  
        
 where
@@ -21,6 +21,9 @@ singleton (i, j) v =
 lookup (i, j) (IntIntMap mm) = do
     m <- M.lookup i mm
     M.lookup j m
+
+(!) :: IntIntMap v -> (Int,Int) -> v
+IntIntMap m ! (i,j) = m M.! i M.! j
 
 insert (i, j) v (IntIntMap mm) = 
     case M.lookup i mm of

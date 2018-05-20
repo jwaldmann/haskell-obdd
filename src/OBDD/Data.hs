@@ -22,9 +22,10 @@ module OBDD.Data
 , Node (..)
 , make
 , register, checked_register
-, cached, top
+, top
 , access
-
+, not_
+, assocs
 )
 
 where
@@ -71,14 +72,14 @@ data OBDD v = OBDD
             
             -- , icore :: !(Map ( Node v Index ) Index)
             , icore :: !(VarIntIntMap v Index)
+            , ifalse :: ! Index
+            , itrue :: ! Index
             , next :: !Index
             , top :: !Index
-            
-            , cache ::  !(IntIntMap Index) 
-               -- ^ inputs and output for binary op
-               -- (unary will be simulated by binary)
             }
 
+assocs :: OBDD v -> [(Index, Node v Index)]
+assocs o = IM.toAscList $ core o
 
 -- | Apply function in each node, bottom-up.
 -- return the value in the root node.
@@ -104,15 +105,13 @@ foldM :: (Monad m, Ord v)
      -> ( v -> a -> a -> m a )
      -> OBDD v -> m a
 foldM leaf branch o = do
-    f <- leaf False ; t <- leaf True
-    let m0 = M.fromList 
-           [(icore_false,f), (icore_true,t)]
     m <- Control.Monad.foldM ( \ m (i,n) -> do
             val <- case n of
+                Leaf b -> leaf b
                 Branch v l r -> 
                         branch v (m M.! l) (m M.! r) 
             return $ M.insert i val m
-          ) m0 $ IM.toAscList $ core o
+          ) M.empty $ IM.toAscList $ core o
     return $ m M.! top o
 
 -- | Apply function in each node, bottom-up.
@@ -158,9 +157,6 @@ full_foldM vars leaf branch o = do
           ) o
     interpolate a Nothing res  
 
-icore_false = 0 :: Index  
-icore_true = 1 :: Index  
-              
 size = unIndex . next
 
 -- | Number of satisfying assignments with  given set of variables.
@@ -173,21 +169,29 @@ number_of_models vars o =
 
 empty :: OBDD v
 empty = OBDD 
-      { core = IM.empty
+      { core = IM.fromList [(0,Leaf False),(1,Leaf True)]
       , icore = VIIM.empty
+      , ifalse = 0
+      , itrue = 1
       , next = 2
-      , top = 0
-      , cache = IIM.empty
+      , top = -1
       }
 
 data Node v i = Leaf !Bool
             | Branch !v !i !i
     deriving ( Eq, Ord )
 
+not_ o = o { ifalse = itrue o
+           , itrue = ifalse o
+           , core = IM.insert (itrue o) (Leaf False)
+                  $ IM.insert (ifalse o) (Leaf True)
+                  $ core o
+           }
+
 access :: OBDD v -> Node v ( OBDD v )
 access s = case top s of
-    0 -> Leaf False
-    1 -> Leaf True
+    i | i == ifalse s -> Leaf False
+    i | i == itrue s -> Leaf True
     t -> case IM.lookup ( top s ) ( core s ) of
         Nothing -> error "OBDD.Data.access"
         Just n  -> case n of
@@ -261,27 +265,12 @@ fresh = do
     put $! s { next = succ i }
     return i
 
-cached :: Ord v
-        => (Index, Index) 
-        -> ( State ( OBDD v ) Index )
-        -> State ( OBDD v ) Index
-cached (l,r) action = do
-    s <- get
-    case IIM.lookup (l, r) $ cache s of
-        Just i -> return i
-        Nothing -> do
-            i <- action
-            s <- get
-            put $! s { cache = IIM.insert (l, r) i 
-                              $ cache s }
-            return i
-
 register :: Ord v
          => Node v Index
        -> State ( OBDD v ) Index
 register n = case n of
-    Leaf False -> return 0
-    Leaf True -> return 1
+    Leaf False -> ifalse <$> get
+    Leaf True -> itrue <$> get
     Branch v l r -> if l == r then return l else do
       s <- get    
       case VIIM.lookup (v, l, r) ( icore s ) of
