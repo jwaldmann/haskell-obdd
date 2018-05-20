@@ -15,49 +15,54 @@ import System.Environment (getArgs, lookupEnv)
 import qualified Data.Map
 import qualified Data.Set
 
+import Prelude hiding ((&&),(||),not,and,or,all,any)
+import OBDD
 import qualified OBDD
 
 dominoes w h = rows ++ cols
     where rows = positions [1..h-1] [1..w] $ \x y -> ((x, y), (x+1, y))
           cols = positions [1..h] [1..w-1] $ \x y -> ((x, y), (x, y+1))
-          positions xs ys f = do
-            x <- xs
-            y <- ys
-            return (f x y)
+          positions xs ys f = f <$> xs <*> ys
 
-positions w h = do
-    x <- [1..h]
-    y <- [1..w]
-    return (x, y)
+positions w h = (,) <$> [1..h] <*> [1..w]
 
-dominoFormula w h = OBDD.and [ everyPosCovered, noPosCoveredTwice ]
-    where everyPosCovered = OBDD.and $ do
+dominoFormula w h = and [ everyPosCovered, noPosCoveredTwice ]
+    where everyPosCovered = -- and $ do
                                 -- forall fields f \in F
-                                f <- fields
-                                return $ OBDD.or $ do
+			    flip all fields $ \ f -> 	
+                                -- f <- fields
+                                -- return $
+				or $ do
                                 -- forall placements of pieces p \in P
                                     p <- placements
-                                    return $ OBDD.and [
+                                    return $ and [
                                         OBDD.unit p True,                 -- placement is chosen
                                         OBDD.constant (f `isCoveredBy` p) -- f is covered by placement p
                                      ]
-          noPosCoveredTwice = OBDD.and $ do
+          noPosCoveredTwice= and $ do
                                   f <- fields
-                                  return $ OBDD.not $ OBDD.or $ do
-                                      p <- placements
-                                      return $ OBDD.or $ do
-                                          q <- placements
-                                          guard $ p /= q
-                                          return $ OBDD.and [
-                                              OBDD.unit p True,
-                                              OBDD.constant (f `isCoveredBy` p),
-
-                                              OBDD.unit q True,
-                                              OBDD.constant (f `isCoveredBy` q)
-                                           ]
+                                  return $ atmost_one $ map (flip OBDD.unit True) $ filter (f `isCoveredBy`) placements
           fields = positions w h
           placements = dominoes w h
           f `isCoveredBy` p = f == fst p || f == snd p
+
+atmost_one :: Boolean b => [b] -> b
+atmost_one = atmost_one_lin
+
+atmost_one_lin xs =
+  let go [] = (true,false)
+      go [x] = (not x, x)
+      go xs = let (ys,zs) = splitAt (div (length xs) 2) xs
+                  (y0,y1) = go ys
+		  (z0,z1) = go zs
+              in  (y0 && z0, y1 && z0 || y0 && z1)
+      (x0,x1) = go xs
+  in  x0 || x1
+
+atmost_one_quad xs = not $ or $ do
+  p <- xs ; q <- xs ; guard $ p < q
+  return $ and [ OBDD.unit p True, OBDD.unit q True ]
+
 
 prettySolution w h ds = putStr $ concat $ do
     x <- [1..h]
