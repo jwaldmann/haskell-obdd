@@ -28,3 +28,8 @@ import OBDD.Property
 import OBDD.Operation
 import OBDD.Display
 import OBDD.Make
+
+import Prelude hiding (not, null)
+
+instance Ord v => Eq (OBDD v) where
+  f == g = null $ not $ equiv f g
