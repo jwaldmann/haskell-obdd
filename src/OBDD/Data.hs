@@ -72,8 +72,8 @@ data OBDD v = OBDD
             
             -- , icore :: !(Map ( Node v Index ) Index)
             , icore :: !(VarIntIntMap v Index)
-            , ifalse :: ! Index
-            , itrue :: ! Index
+            , ifalse :: !Index
+            , itrue :: !Index
             , next :: !Index
             , top :: !Index
             }

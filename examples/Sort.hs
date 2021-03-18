@@ -63,11 +63,11 @@ vars w = S.fromList $ (,) <$> [1..w] <*> [1..w]
 -- * poset enumeration
 
 data State =
-     State { comps:: ! [Comp]
-           , poset :: ! Poset
-           , args :: ! [Num]
-           , form :: ! Bit
-           , size :: ! Integer
+     State { comps:: ![Comp]
+           , poset :: !Poset
+           , args :: ![Num]
+           , form :: !Bit
+           , size :: !Integer
            }
 
 start w =
@@ -110,20 +110,20 @@ work w d s known = do
     else if size s > 2^d
          then return (False,known)
          else do
-	   let verbose = False
+           let verbose = False
            case M.lookup (canonical $ poset s) known of
              Just (r,prev) -> do
                if verbose
-	         then putStrLn $ unwords [ show d, show $ size s, show (comps s)
+                 then putStrLn $ unwords [ show d, show $ size s, show (comps s)
                                   , show r, "iso", show prev ]
-		 else putStr "!"
+                 else putStr "!"
                return (r,known)
              Nothing -> do
                let go [] known = return (False, known)
                    go (c@(x,y):cs) known = do
-		     let [s1,s2] = reverse
-		                 $ sortOn size
-		                 $ map (next w s) [ (x,y), (y,x) ]
+                     let [s1,s2] = reverse
+                                 $ sortOn size
+                                 $ map (next w s) [ (x,y), (y,x) ]
                      (a1,k1) <- work w (d-1) s1 known
                      if a1
                        then do
@@ -139,10 +139,10 @@ work w d s known = do
                       $ comparators w
                (r,known) <- go candidates known
                if verbose
-	         then putStrLn $ unwords [ show d, show $ size s, show (comps s)
+                 then putStrLn $ unwords [ show d, show $ size s, show (comps s)
                                   , show r ]
                  else putStr "." 
-  	       hFlush stdout	 
+               hFlush stdout
                return
                  (r, M.insert (canonical $ poset s) (r, comps s) known)
 
@@ -154,7 +154,7 @@ main = getArgs >>= \ case
                  $ logBase 2 $ fromIntegral
                  $ factorial $ read w
            in -- search (read w) b
-	       void $ run (read w) b
+               void $ run (read w) b
   [ w , d ] -> void $ run (read w) (read d)
 
 
