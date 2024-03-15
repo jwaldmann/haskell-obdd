@@ -9,7 +9,7 @@ module OBDD.Operation
 , unary, binary
 , instantiate
 , exists, exists_many
-, forall, forall_many
+, forall_, forall_many
 , fold, foldM
 , full_fold, full_foldM
 )
@@ -175,10 +175,10 @@ exists var = fold bool
 
 forall_many :: (Foldable c, Ord v) => c v -> OBDD v -> OBDD v
 forall_many vars x = 
-    foldr forall x vars 
+    foldr forall_ x vars 
 
-forall :: Ord v => v -> OBDD v -> OBDD v
-forall var = fold bool
+forall_ :: Ord v => v -> OBDD v -> OBDD v
+forall_ var = fold bool
   ( \ v l r -> if var == v then l && r else choose l r (variable v) )
 
 -- | replace variable by value

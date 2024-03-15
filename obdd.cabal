@@ -1,6 +1,6 @@
+Cabal-Version:       3.0
 Name:                obdd
-Version:             0.8.4
-Cabal-Version:       1.12
+Version:             0.9.0
 Build-type: Simple
 Synopsis:            Ordered Reduced Binary Decision Diagrams
 Description:
@@ -31,13 +31,12 @@ Description:
   see <https://gitlab.imn.htwk-leipzig.de/waldmann/min-comp-sort this example>.
 
 category:            Logic
-License:             GPL
-License-file:        LICENSE
+License:             GPL-3.0-only
 Author:              Johannes Waldmann
 Maintainer:          Johannes Waldmann
 Homepage:            https://github.com/jwaldmann/haskell-obdd
 
-tested-with: GHC == 9.0.1 , GHC == 8.10.4 , GHC == 8.8.4 , GHC == 8.6.5 , GHC == 8.4.4
+tested-with: GHC == 9.10.1, GHC == 9.8.2, GHC == 9.0.1 , GHC == 8.10.4 , GHC == 8.8.4 , GHC == 8.6.5 , GHC == 8.4.4
              , GHC == 8.2.2 , GHC == 8.0.2 , GHC == 7.10.3
                      
 Source-Repository head
@@ -47,7 +46,7 @@ Source-Repository head
 Library
     Build-Depends:       base==4.*, random, mtl, containers>=0.5, array, process-extras, ersatz, text
     Hs-Source-Dirs:          src
-    Exposed-Modules:     OBDD OBDD.Data OBDD.Make OBDD.Operation OBDD.Property, OBDD.Display, OBDD.Linopt, OBDD.Cube
+    Exposed-Modules:     OBDD, OBDD.Data, OBDD.Make, OBDD.Operation, OBDD.Property, OBDD.Display, OBDD.Linopt, OBDD.Cube
     Other-Modules:           OBDD.IntIntMap, OBDD.VarIntIntMap
     Default-Language: Haskell2010
     ghc-options: -funbox-strict-fields
